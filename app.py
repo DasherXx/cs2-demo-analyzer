@@ -65,6 +65,118 @@ def save_meta(demo_id: str, meta: dict) -> None:
 # Parsowanie (awpy) — wywoływane w tle przez BackgroundTasks
 # ---------------------------------------------------------------------------
 
+def compute_findings(players: list, rounds: list, kills: list, grenades: list, tick_rate) -> dict:
+    """
+    Silnik wniosków — dla każdego gracza liczy kilka reguł analizy.
+    Działa na już sparsowanych danych (kills, grenades, rounds).
+    """
+    rate = tick_rate or 64           # CS2 zwykle 64 tick
+    trade_window = int(rate * 5)     # 5 sekund na pomszczenie śmierci
+
+    # Pierwsze starcie (opening duel) każdej rundy = kill o najmniejszym ticku
+    first_kill_by_round = {}
+    for k in kills:
+        r = k["round"]
+        if r not in first_kill_by_round or k["tick"] < first_kill_by_round[r]["tick"]:
+            first_kill_by_round[r] = k
+
+    # Rundy, w których gracz rzucił choć jeden granat
+    nades_by_player_round = {}
+    for g in grenades:
+        nades_by_player_round.setdefault(g["thrower"], set()).add(g["round"])
+
+    findings = {}
+    for player in players:
+        deaths = [k for k in kills if k["victim"] == player]
+        rounds_died = sorted(set(k["round"] for k in deaths))
+
+        # REGUŁA 1 — zginąłeś nie rzucając żadnego granatu
+        threw_in = nades_by_player_round.get(player, set())
+        deaths_no_utility = [r for r in rounds_died if r not in threw_in]
+
+        # REGUŁA 2 — śmierć bez trade'a (kolega nie pomścił w oknie czasowym)
+        untraded = []
+        traded = 0
+        for d in deaths:
+            killer = d["attacker"]
+            my_side = d["victim_side"]
+            t = d["tick"]
+            was_traded = any(
+                k["round"] == d["round"]
+                and k["victim"] == killer            # ktoś zabił mojego zabójcę
+                and k["attacker_side"] == my_side     # i był z mojej drużyny
+                and k["attacker"] != player           # (nie ja, bo nie żyję)
+                and t < k["tick"] <= t + trade_window
+                for k in kills
+            )
+            if was_traded:
+                traded += 1
+            else:
+                untraded.append({"round": d["round"], "killer": killer, "weapon": d["weapon"]})
+
+        total_deaths = len(deaths)
+        trade_rate = round(100 * traded / total_deaths) if total_deaths else 0
+
+        # REGUŁA 3 — pierwsze starcia rundy (entry duels)
+        entry_kills = sum(1 for fk in first_kill_by_round.values() if fk["attacker"] == player)
+        entry_deaths = sum(1 for fk in first_kill_by_round.values() if fk["victim"] == player)
+
+        # REGUŁA 4 — miejsca (callouty): gdzie giniesz vs gdzie zabijasz
+        place_stats = {}
+        for k in deaths:
+            p = k.get("victim_place") or "?"
+            place_stats.setdefault(p, {"deaths": 0, "kills": 0})["deaths"] += 1
+        for k in kills:
+            if k["attacker"] == player:
+                p = k.get("attacker_place") or "?"
+                place_stats.setdefault(p, {"deaths": 0, "kills": 0})["kills"] += 1
+        # Najgorsze spoty = najwięcej śmierci, sortowane po deaths
+        worst_spots = sorted(
+            ({"place": p, **v, "net": v["kills"] - v["deaths"]} for p, v in place_stats.items()),
+            key=lambda x: (x["deaths"], -x["net"]), reverse=True
+        )[:5]
+
+        # KONTEKST per śmierć — łączymy sygnały w tagi (over-peek itp.)
+        untraded_set = {(u["round"]) for u in untraded}
+        death_contexts = []
+        for d in deaths:
+            tags = []
+            place = d.get("victim_place") or "?"
+            was_entry = any(
+                fk["victim"] == player and fk["round"] == d["round"]
+                for fk in [first_kill_by_round.get(d["round"])] if fk
+            )
+            is_untraded = any(
+                u["round"] == d["round"] and u["killer"] == d["attacker"] for u in untraded
+            )
+            threw_nade = d["round"] in threw_in
+            if was_entry:
+                tags.append("pierwsza śmierć rundy")
+            if is_untraded:
+                tags.append("bez trade'a")
+            if not threw_nade:
+                tags.append("bez utility")
+            if d.get("thrusmoke"):
+                tags.append("przez dym")
+            death_contexts.append({
+                "round": d["round"], "place": place,
+                "killer": d["attacker"], "weapon": d["weapon"], "tags": tags,
+            })
+
+        findings[player] = {
+            "deaths_total":     total_deaths,
+            "deaths_no_utility": deaths_no_utility,
+            "untraded_deaths":  untraded,
+            "traded_deaths":    traded,
+            "trade_rate":       trade_rate,
+            "entry_kills":      entry_kills,
+            "entry_deaths":     entry_deaths,
+            "worst_spots":      worst_spots,
+            "death_contexts":   death_contexts,
+        }
+    return findings
+
+
 def _do_parse(demo_id: str, dem_path: Path) -> None:
     """
     Parsuje plik .dem i zapisuje raport JSON obok metadanych.
@@ -107,21 +219,25 @@ def _do_parse(demo_id: str, dem_path: Path) -> None:
                     "bomb_site": row.get("bomb_site", ""),
                 })
 
-        # Zabójstwa
+        # Zabójstwa — dodajemy strony (potrzebne do wykrywania trade'ów)
         kills_df = dem.kills
         kills = []
         if kills_df is not None and len(kills_df) > 0:
             for row in kills_df.to_dicts():
                 kills.append({
-                    "round":      row.get("round_num"),
-                    "tick":       row.get("tick"),
-                    "attacker":   row.get("attacker_name"),
-                    "victim":     row.get("victim_name"),
-                    "weapon":     row.get("weapon"),
-                    "headshot":   row.get("headshot"),
-                    "assistedby": row.get("assister_name"),
-                    "thrusmoke":  row.get("thrusmoke", False),
-                    "blind":      row.get("attackerblind", False),
+                    "round":         row.get("round_num"),
+                    "tick":          row.get("tick"),
+                    "attacker":      row.get("attacker_name"),
+                    "attacker_side": row.get("attacker_side"),
+                    "attacker_place": row.get("attacker_place"),
+                    "victim":        row.get("victim_name"),
+                    "victim_side":   row.get("victim_side"),
+                    "victim_place":  row.get("victim_place"),
+                    "weapon":        row.get("weapon"),
+                    "headshot":      row.get("headshot"),
+                    "assistedby":    row.get("assister_name"),
+                    "thrusmoke":     row.get("thrusmoke", False),
+                    "blind":         row.get("attackerblind", False),
                 })
 
         # Granaty — każdy rzut istnieje jako kilka obiektów (projektil + efekt),
@@ -176,6 +292,12 @@ def _do_parse(demo_id: str, dem_path: Path) -> None:
                 s = player_stats.setdefault(name, {"kills": 0, "deaths": 0, "hs": 0, "grenades": 0})
                 s["grenades"] += 1
 
+        # Silnik wniosków — analiza per gracz
+        players = list(player_stats.keys())
+        player_findings = compute_findings(
+            players, rounds, kills, grenades, header.get("tick_rate")
+        )
+
         report = {
             "demo_id":        demo_id,
             "map":            header.get("map_name", "nieznana"),
@@ -189,6 +311,7 @@ def _do_parse(demo_id: str, dem_path: Path) -> None:
             "grenades_total": len(grenades),
             "grenades":       grenades,
             "player_stats":   player_stats,
+            "player_findings": player_findings,
             "parsed_at":      datetime.datetime.now(datetime.timezone.utc).isoformat(),
         }
 

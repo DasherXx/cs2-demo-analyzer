@@ -68,6 +68,22 @@
   .statbox .v{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text)}
   .statbox .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-top:3px}
   .back{margin-bottom:12px}
+  .finding{display:flex;gap:12px;background:var(--panel2);border:1px solid var(--line);
+           border-left-width:3px;border-radius:9px;padding:12px 14px;margin-bottom:9px}
+  .finding.warn{border-left-color:var(--warn)}
+  .finding.bad{border-left-color:var(--err)}
+  .finding.ok{border-left-color:var(--good)}
+  .finding .fval{font-family:var(--mono);font-size:22px;font-weight:700;min-width:46px;text-align:center}
+  .finding.warn .fval{color:var(--warn)}.finding.bad .fval{color:var(--err)}.finding.ok .fval{color:var(--good)}
+  .finding .fbody{flex:1}
+  .finding .ftitle{font-size:14px;font-weight:600;margin-bottom:2px}
+  .finding .ftip{font-size:12px;color:var(--muted);line-height:1.45}
+  .ctag{display:inline-block;font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:4px;
+        background:#2a1a1a;color:var(--warn);margin:0 3px 2px 0}
+  .dctx{font-size:12px;padding:7px 0;border-bottom:1px solid #1e2230}
+  .dctx:last-child{border-bottom:none}
+  .dctx .dwhere{font-family:var(--mono);color:var(--muted)}
+  .spot-net-neg{color:var(--err)}.spot-net-pos{color:var(--good)}
   .scoreline{font-family:var(--mono);font-size:22px;font-weight:700;margin-bottom:14px;color:var(--text)}
   .section{margin-bottom:14px}
   .section h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px}
@@ -212,6 +228,86 @@ function renderPlayerDetail(demoId, name){
     `<tr><td>${k.round}</td><td>${k.attacker||'—'}</td><td>${k.weapon||'—'}</td></tr>`
   ).join('') || '<tr><td colspan="3" style="color:var(--muted)">brak</td></tr>';
 
+  // ── Wnioski (silnik reguł) ──
+  const f = (report.player_findings || {})[name] || {};
+  const findingCards = [];
+
+  // Reguła 1 — śmierć bez utility
+  if (f.deaths_no_utility) {
+    const n = f.deaths_no_utility.length;
+    const sev = n >= 5 ? 'bad' : (n >= 2 ? 'warn' : 'ok');
+    const rounds = f.deaths_no_utility.length ? ` (rundy: ${f.deaths_no_utility.join(', ')})` : '';
+    findingCards.push(`<div class="finding ${sev}">
+      <div class="fval">${n}</div>
+      <div class="fbody">
+        <div class="ftitle">Śmierci bez użycia granatu</div>
+        <div class="ftip">Tyle razy zginąłeś nie rzucając żadnego utility w rundzie${rounds}. Granat w plecaku nic nie daje — rzucaj smoke/flasha zanim wejdziesz w starcie.</div>
+      </div>
+    </div>`);
+  }
+
+  // Reguła 2 — śmierć bez trade'a
+  if (f.deaths_total) {
+    const n = f.untraded_deaths.length;
+    const sev = f.trade_rate < 40 ? 'bad' : (f.trade_rate < 60 ? 'warn' : 'ok');
+    findingCards.push(`<div class="finding ${sev}">
+      <div class="fval">${n}</div>
+      <div class="fbody">
+        <div class="ftitle">Śmierci bez trade'a — trade rate ${f.trade_rate}%</div>
+        <div class="ftip">Z ${f.deaths_total} śmierci aż ${n} nie zostało pomszczonych w 5 sekund. Oznacza to, że umierasz w izolacji — trzymaj się bliżej drużyny, żeby koledzy mogli odbić Twojego zabójcę.</div>
+      </div>
+    </div>`);
+  }
+
+  // Reguła 3 — pierwsze starcia
+  if (f.entry_kills !== undefined) {
+    const attempts = f.entry_kills + f.entry_deaths;
+    const sev = f.entry_deaths > f.entry_kills ? 'warn' : 'ok';
+    findingCards.push(`<div class="finding ${sev}">
+      <div class="fval">${f.entry_kills}–${f.entry_deaths}</div>
+      <div class="fbody">
+        <div class="ftitle">Pierwsze starcia rundy (otwarcia)</div>
+        <div class="ftip">Wygrałeś ${f.entry_kills}, przegrałeś ${f.entry_deaths} z ${attempts} pierwszych pojedynków. ${f.entry_deaths > f.entry_kills ? 'Częściej giniesz jako pierwszy — rozważ wchodzenie z flashem lub za kolegą.' : 'Dobra skuteczność w otwarciach.'}</div>
+      </div>
+    </div>`);
+  }
+
+  const findingsSection = findingCards.length ? `
+    <div class="section">
+      <h4>Co możesz poprawić</h4>
+      ${findingCards.join('')}
+    </div>` : '';
+
+  // Najgorsze miejsca (callouty)
+  const spots = f.worst_spots || [];
+  const spotRows = spots.map(sp=>{
+    const netCls = sp.net < 0 ? 'spot-net-neg' : (sp.net > 0 ? 'spot-net-pos' : '');
+    const netStr = (sp.net > 0 ? '+' : '') + sp.net;
+    return `<tr><td>${sp.place}</td><td>${sp.deaths}</td><td>${sp.kills}</td><td class="${netCls}">${netStr}</td></tr>`;
+  }).join('');
+  const spotsSection = spots.length ? `
+    <div class="section">
+      <h4>Najgorsze miejsca — gdzie giniesz vs zabijasz</h4>
+      <table>
+        <tr><th>Miejsce</th><th>Śmierci</th><th>Kille</th><th>Bilans</th></tr>
+        ${spotRows}
+      </table>
+    </div>` : '';
+
+  // Śmierci z kontekstem (tagi)
+  const ctx = f.death_contexts || [];
+  const ctxRows = ctx.map(d=>{
+    const tags = (d.tags||[]).map(t=>`<span class="ctag">${t}</span>`).join('');
+    return `<div class="dctx">
+      <span class="dwhere">R${d.round} · ${d.place}</span> — zabił Cię ${d.killer||'?'} (${d.weapon||'?'})<br>${tags||'<span style="color:var(--muted)">—</span>'}
+    </div>`;
+  }).join('');
+  const ctxSection = ctx.length ? `
+    <div class="section">
+      <h4>Twoje śmierci w kontekście (${ctx.length})</h4>
+      ${ctxRows}
+    </div>` : '';
+
   container.innerHTML = `
     <button class="btn back" onclick="renderPlayerSelection('${demoId}')">← wszyscy gracze</button>
     <h3>${name} · ${report.map}</h3>
@@ -222,6 +318,9 @@ function renderPlayerDetail(demoId, name){
       <div class="statbox"><div class="v">${hsPct}%</div><div class="l">HS</div></div>
       <div class="statbox"><div class="v">${s.grenades}</div><div class="l">Granaty</div></div>
     </div>
+    ${findingsSection}
+    ${spotsSection}
+    ${ctxSection}
 
     <div class="section">
       <h4>Granaty wg typu</h4>
