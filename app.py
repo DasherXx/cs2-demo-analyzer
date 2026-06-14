@@ -452,6 +452,34 @@ def debug_demo(demo_id: str):
     }
 
 
+@app.get("/api/debug-nades")
+def debug_nades_auto():
+    """Diagnostyka BEZ ID — bierze najnowsze demo z magazynu i pokazuje smokes/infernos/grenades."""
+    dems = sorted(STORAGE.glob("*.dem"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if not dems:
+        raise HTTPException(404, "Brak plików .dem w magazynie — wgraj demo najpierw")
+    dem_path = dems[0]
+    from awpy import Demo
+
+    dem = Demo(str(dem_path))
+    dem.parse()
+    out = {"plik": dem_path.name}
+    for attr in ["smokes", "infernos", "grenades"]:
+        df = getattr(dem, attr, None)
+        try:
+            if df is not None and len(df) > 0:
+                out[attr] = {
+                    "columns": list(df.columns),
+                    "count": len(df),
+                    "sample": df.to_dicts()[:3],
+                }
+            else:
+                out[attr] = "brak / pusty"
+        except Exception as e:
+            out[attr] = f"blad: {e}"
+    return out
+
+
 @app.get("/", response_class=HTMLResponse)
 def index():
     return (BASE / "index.html").read_text(encoding="utf-8")
