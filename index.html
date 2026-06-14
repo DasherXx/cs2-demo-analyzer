@@ -133,9 +133,8 @@ async function startParse(id, btn){
 
 function renderReport(report, container){
   // Wynik meczu
-  const lastRound = report.rounds[report.rounds.length-1] || {};
-  const tScore  = lastRound.t_score  ?? '?';
-  const ctScore = lastRound.ct_score ?? '?';
+  const tScore  = report.score?.t  ?? '?';
+  const ctScore = report.score?.ct ?? '?';
 
   // Top zabójstw (max 10 wierszy)
   const killRows = report.kills.slice(0,10).map(k=>

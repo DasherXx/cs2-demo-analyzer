@@ -86,17 +86,25 @@ def _do_parse(demo_id: str, dem_path: Path) -> None:
         # ----------------------------------------------------------------
         header = dem.header or {}
 
-        # Rundy
+        # Rundy — liczymy wynik zliczając wygrane rundy per strona
         rounds_df = dem.rounds
         rounds = []
+        t_score = 0
+        ct_score = 0
         if rounds_df is not None and len(rounds_df) > 0:
             for row in rounds_df.to_dicts():
+                winner = row.get("winner", "")
+                if winner == "t":
+                    t_score += 1
+                elif winner == "ct":
+                    ct_score += 1
                 rounds.append({
-                    "round":       row.get("round_num"),
-                    "winner":      row.get("winner_side"),
-                    "reason":      row.get("reason"),
-                    "t_score":     row.get("t_score"),
-                    "ct_score":    row.get("ct_score"),
+                    "round":    row.get("round_num"),
+                    "winner":   winner.upper() if winner else "?",
+                    "reason":   row.get("reason", ""),
+                    "t_score":  t_score,
+                    "ct_score": ct_score,
+                    "bomb_site": row.get("bomb_site", ""),
                 })
 
         # Zabójstwa
@@ -105,29 +113,47 @@ def _do_parse(demo_id: str, dem_path: Path) -> None:
         if kills_df is not None and len(kills_df) > 0:
             for row in kills_df.to_dicts():
                 kills.append({
-                    "round":       row.get("round_num"),
-                    "tick":        row.get("tick"),
-                    "attacker":    row.get("attacker_name"),
-                    "victim":      row.get("victim_name"),
-                    "weapon":      row.get("weapon"),
-                    "headshot":    row.get("headshot"),
-                    "assistedby":  row.get("assister_name"),
+                    "round":      row.get("round_num"),
+                    "tick":       row.get("tick"),
+                    "attacker":   row.get("attacker_name"),
+                    "victim":     row.get("victim_name"),
+                    "weapon":     row.get("weapon"),
+                    "headshot":   row.get("headshot"),
+                    "assistedby": row.get("assister_name"),
+                    "thrusmoke":  row.get("thrusmoke", False),
+                    "blind":      row.get("attackerblind", False),
                 })
 
-        # Granaty — smoki, flashe, mołotowy, HE
+        # Granaty — każdy rzut istnieje jako kilka obiektów (projektil + efekt),
+        # więc liczymy TYLKO fazę "Projectile" = jeden obiekt na fizyczny rzut.
+        # Decoy ma tylko jeden typ, więc dodajemy go osobno.
+        THROW_TYPES = {
+            "CSmokeGrenadeProjectile": "smoke",
+            "CFlashbangProjectile":    "flash",
+            "CHEGrenadeProjectile":    "HE",
+            "CMolotovProjectile":      "molotov",
+            "CDecoyGrenade":           "decoy",
+        }
         grenades_df = dem.grenades
         grenades = []
+        seen_entities = set()
         if grenades_df is not None and len(grenades_df) > 0:
             for row in grenades_df.to_dicts():
+                raw_type = row.get("grenade_type")
+                if raw_type not in THROW_TYPES:
+                    continue  # pomijamy fazę efektu (dym, ogień) — liczymy tylko rzut
+                key = (row.get("round_num"), row.get("entity_id"))
+                if key in seen_entities:
+                    continue  # ten sam projektil w kolejnym ticku — pomijamy
+                seen_entities.add(key)
                 grenades.append({
-                    "round":      row.get("round_num"),
-                    "thrower":    row.get("thrower_name"),
-                    "type":       row.get("grenade_type"),
-                    "x":          round(row.get("grenade_x", 0) or 0, 1),
-                    "y":          round(row.get("grenade_y", 0) or 0, 1),
+                    "round":   row.get("round_num"),
+                    "thrower": row.get("thrower"),
+                    "type":    THROW_TYPES[raw_type],   # czytelna nazwa
+                    "tick":    row.get("tick"),
                 })
 
-        # Skrócone statystyki per gracz
+        # Statystyki per gracz — kills, deaths, HS, granaty
         player_stats: dict[str, dict] = {}
         if kills_df is not None and len(kills_df) > 0:
             for row in kills_df.to_dicts():
@@ -143,25 +169,27 @@ def _do_parse(demo_id: str, dem_path: Path) -> None:
                     else:
                         s["deaths"] += 1
 
-        if grenades_df is not None and len(grenades_df) > 0:
-            for row in grenades_df.to_dicts():
-                name = row.get("thrower_name")
-                if name and name in player_stats:
-                    player_stats[name]["grenades"] += 1
+        # Granaty per gracz — liczymy z odfiltrowanej listy RZUTÓW (nie ticków)
+        for g in grenades:
+            name = g.get("thrower")
+            if name:
+                s = player_stats.setdefault(name, {"kills": 0, "deaths": 0, "hs": 0, "grenades": 0})
+                s["grenades"] += 1
 
         report = {
-            "demo_id":      demo_id,
-            "map":          header.get("map_name", "nieznana"),
-            "server":       header.get("server_name", ""),
-            "tick_rate":    header.get("tick_rate"),
-            "rounds_total": len(rounds),
-            "rounds":       rounds,
-            "kills_total":  len(kills),
-            "kills":        kills,
+            "demo_id":        demo_id,
+            "map":            header.get("map_name", "nieznana"),
+            "server":         header.get("server_name", ""),
+            "tick_rate":      header.get("tick_rate"),
+            "score":          {"t": t_score, "ct": ct_score},
+            "rounds_total":   len(rounds),
+            "rounds":         rounds,
+            "kills_total":    len(kills),
+            "kills":          kills,
             "grenades_total": len(grenades),
-            "grenades":     grenades,
-            "player_stats": player_stats,
-            "parsed_at":    datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "grenades":       grenades,
+            "player_stats":   player_stats,
+            "parsed_at":      datetime.datetime.now(datetime.timezone.utc).isoformat(),
         }
 
         report_path = STORAGE / f"{demo_id}_report.json"
@@ -271,6 +299,34 @@ def download_demo(demo_id: str):
     if not path.exists():
         raise HTTPException(404, "Plik zniknął z magazynu")
     return FileResponse(path, filename=meta["filename"] or meta["stored_as"])
+
+
+@app.get("/api/demos/{demo_id}/debug")
+def debug_demo(demo_id: str):
+    """Tymczasowy endpoint diagnostyczny — pokazuje surową strukturę granatów."""
+    meta = load_meta(demo_id)
+    dem_path = STORAGE / meta["stored_as"]
+    from awpy import Demo
+
+    dem = Demo(str(dem_path))
+    dem.parse()
+    g = dem.grenades
+    rows = g.to_dicts()
+    types = sorted(set(r.get("grenade_type") for r in rows))
+    round1 = [
+        {
+            "thrower":   r.get("thrower"),
+            "type":      r.get("grenade_type"),
+            "tick":      r.get("tick"),
+            "entity_id": r.get("entity_id"),
+        }
+        for r in rows if r.get("round_num") == 1
+    ][:15]
+    return {
+        "total_rows":    len(rows),
+        "grenade_types": types,
+        "round1_sample": round1,
+    }
 
 
 @app.get("/", response_class=HTMLResponse)
