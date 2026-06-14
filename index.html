@@ -58,6 +58,16 @@
   .report{margin-top:12px;border-top:1px solid var(--line);padding-top:12px;display:none}
   .report.open{display:block}
   .report h3{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px}
+  .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+  .pcard{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:11px 13px;cursor:pointer;transition:border-color .15s,transform .1s}
+  .pcard:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .pcard .pname{font-weight:600;font-size:14px;word-break:break-all}
+  .pcard .pstat{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px}
+  .statgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:8px 0 18px}
+  .statbox{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px 4px;text-align:center}
+  .statbox .v{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text)}
+  .statbox .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-top:3px}
+  .back{margin-bottom:12px}
   .scoreline{font-family:var(--mono);font-size:22px;font-weight:700;margin-bottom:14px;color:var(--text)}
   .section{margin-bottom:14px}
   .section h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px}
@@ -131,69 +141,108 @@ async function startParse(id, btn){
   }, 2000);
 }
 
+window._reports = window._reports || {};
+
 function renderReport(report, container){
-  // Wynik meczu
-  const tScore  = report.score?.t  ?? '?';
+  // Lista graczy posortowana po killach — indeksy używamy w onclick (bezpieczne)
+  report._players = Object.entries(report.player_stats)
+    .sort((a,b)=> b[1].kills - a[1].kills)
+    .map(e=>e[0]);
+  report._container = container.id;
+  window._reports[report.demo_id] = report;
+  renderPlayerSelection(report.demo_id);
+  container.classList.add('open');
+}
+
+function getCtx(demoId){
+  const report = window._reports[demoId];
+  return { report, container: document.getElementById(report._container) };
+}
+
+// EKRAN 1 — wybór gracza
+function renderPlayerSelection(demoId){
+  const { report, container } = getCtx(demoId);
+  const tScore = report.score?.t ?? '?';
   const ctScore = report.score?.ct ?? '?';
 
-  // Top zabójstw (max 10 wierszy)
-  const killRows = report.kills.slice(0,10).map(k=>
-    `<tr>
-      <td>${k.round??''}</td>
-      <td>${k.attacker||'—'}</td>
-      <td>${k.victim||'—'}</td>
-      <td>${k.weapon||'—'}</td>
-      <td>${k.headshot ? '<span class="hs">HS</span>' : ''}</td>
-    </tr>`
-  ).join('');
-
-  // Statystyki graczy
-  const playerRows = Object.entries(report.player_stats)
-    .sort((a,b)=> b[1].kills - a[1].kills)
-    .map(([name, s])=>
-      `<tr>
-        <td>${name}</td>
-        <td>${s.kills}</td>
-        <td>${s.deaths}</td>
-        <td>${s.kills&&s.deaths ? (s.kills/s.deaths).toFixed(2) : s.kills||0}</td>
-        <td>${s.hs}</td>
-        <td>${s.grenades}</td>
-      </tr>`
-    ).join('');
-
-  // Granaty (pierwsze 8)
-  const grenadesRows = report.grenades.slice(0,8).map(g=>
-    `<tr><td>${g.round??''}</td><td>${g.thrower||'—'}</td><td>${g.type||'—'}</td></tr>`
-  ).join('');
+  const cards = report._players.map((name, idx)=>{
+    const s = report.player_stats[name];
+    const kd = s.deaths ? (s.kills/s.deaths).toFixed(2) : s.kills.toFixed(2);
+    return `<div class="pcard" onclick="showPlayer('${demoId}', ${idx})">
+      <div class="pname">${name}</div>
+      <div class="pstat">${s.kills}–${s.deaths} · K/D ${kd}</div>
+    </div>`;
+  }).join('');
 
   container.innerHTML = `
     <h3>Wynik · ${report.map}</h3>
     <div class="scoreline">T ${tScore} : ${ctScore} CT</div>
+    <div class="section">
+      <h4>Kogo analizujemy? — kliknij gracza</h4>
+      <div class="pgrid">${cards}</div>
+    </div>`;
+}
+
+function showPlayer(demoId, idx){
+  const { report } = getCtx(demoId);
+  renderPlayerDetail(demoId, report._players[idx]);
+}
+
+// EKRAN 2 — pojedynczy gracz
+function renderPlayerDetail(demoId, name){
+  const { report, container } = getCtx(demoId);
+  const s = report.player_stats[name] || {kills:0,deaths:0,hs:0,grenades:0};
+  const kd = s.deaths ? (s.kills/s.deaths).toFixed(2) : s.kills.toFixed(2);
+  const hsPct = s.kills ? Math.round(100*s.hs/s.kills) : 0;
+
+  const myKills  = report.kills.filter(k=> k.attacker === name);
+  const myDeaths = report.kills.filter(k=> k.victim === name);
+  const myNades  = report.grenades.filter(g=> g.thrower === name);
+
+  // Granaty pogrupowane po typie
+  const byType = {};
+  myNades.forEach(g=>{ byType[g.type] = (byType[g.type]||0)+1; });
+  const nadeSummary = Object.entries(byType).map(([t,c])=>`${t}: ${c}`).join(' · ') || 'brak';
+
+  const killRows = myKills.map(k=>
+    `<tr><td>${k.round}</td><td>${k.victim||'—'}</td><td>${k.weapon||'—'}</td><td>${k.headshot?'<span class="hs">HS</span>':''}</td></tr>`
+  ).join('') || '<tr><td colspan="4" style="color:var(--muted)">brak</td></tr>';
+
+  const deathRows = myDeaths.map(k=>
+    `<tr><td>${k.round}</td><td>${k.attacker||'—'}</td><td>${k.weapon||'—'}</td></tr>`
+  ).join('') || '<tr><td colspan="3" style="color:var(--muted)">brak</td></tr>';
+
+  container.innerHTML = `
+    <button class="btn back" onclick="renderPlayerSelection('${demoId}')">← wszyscy gracze</button>
+    <h3>${name} · ${report.map}</h3>
+    <div class="statgrid">
+      <div class="statbox"><div class="v">${s.kills}</div><div class="l">Kille</div></div>
+      <div class="statbox"><div class="v">${s.deaths}</div><div class="l">Śmierci</div></div>
+      <div class="statbox"><div class="v">${kd}</div><div class="l">K/D</div></div>
+      <div class="statbox"><div class="v">${hsPct}%</div><div class="l">HS</div></div>
+      <div class="statbox"><div class="v">${s.grenades}</div><div class="l">Granaty</div></div>
+    </div>
 
     <div class="section">
-      <h4>Statystyki graczy (${Object.keys(report.player_stats).length} graczy)</h4>
+      <h4>Granaty wg typu</h4>
+      <p style="font-family:var(--mono);font-size:13px;color:var(--muted);margin:0">${nadeSummary}</p>
+    </div>
+
+    <div class="section">
+      <h4>Zabójstwa (${myKills.length})</h4>
       <table>
-        <tr><th>Gracz</th><th>K</th><th>D</th><th>K/D</th><th>HS</th><th>Granaty</th></tr>
-        ${playerRows || '<tr><td colspan="6" style="color:var(--muted)">brak danych</td></tr>'}
+        <tr><th>Runda</th><th>Ofiara</th><th>Broń</th><th></th></tr>
+        ${killRows}
       </table>
     </div>
 
     <div class="section">
-      <h4>Zabójstwa · pierwsze 10 z ${report.kills_total}</h4>
+      <h4>Śmierci (${myDeaths.length})</h4>
       <table>
-        <tr><th>Runda</th><th>Killer</th><th>Victim</th><th>Broń</th><th></th></tr>
-        ${killRows || '<tr><td colspan="5" style="color:var(--muted)">brak danych</td></tr>'}
-      </table>
-    </div>
-
-    <div class="section">
-      <h4>Granaty · pierwsze 8 z ${report.grenades_total}</h4>
-      <table>
-        <tr><th>Runda</th><th>Gracz</th><th>Typ</th></tr>
-        ${grenadesRows || '<tr><td colspan="3" style="color:var(--muted)">brak danych</td></tr>'}
+        <tr><th>Runda</th><th>Zabił go</th><th>Broń</th></tr>
+        ${deathRows}
       </table>
     </div>`;
-  container.classList.add('open');
 }
 
 async function toggleReport(id, btn, reportEl){
