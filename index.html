@@ -6,61 +6,78 @@
 <title>CS2 Demo — magazyn</title>
 <style>
   :root{
-    --bg:#11131a; --panel:#181b24; --panel-2:#1f2330;
-    --line:#2a2f3e; --text:#e7e9ef; --muted:#8b90a0;
-    --accent:#5b7cff; --accent-ink:#0b1020; --good:#3ecf8e; --warn:#e0a23c;
+    --bg:#11131a;--panel:#181b24;--panel2:#1f2330;--line:#2a2f3e;
+    --text:#e7e9ef;--muted:#8b90a0;--accent:#5b7cff;--good:#3ecf8e;
+    --warn:#e0a23c;--err:#e05c5c;
     --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
     --sans:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5}
-  .wrap{max-width:680px;margin:0 auto;padding:28px 18px 64px}
+  .wrap{max-width:700px;margin:0 auto;padding:28px 18px 80px}
   header{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
-  h1{font-size:20px;font-weight:600;margin:0;letter-spacing:-.01em}
-  .tag{font-family:var(--mono);font-size:11px;color:var(--accent);border:1px solid var(--line);
-       padding:2px 7px;border-radius:6px}
+  h1{font-size:20px;font-weight:600;margin:0}
+  .tag{font-family:var(--mono);font-size:11px;color:var(--accent);border:1px solid var(--line);padding:2px 7px;border-radius:6px}
   .sub{color:var(--muted);font-size:13px;margin:0 0 22px}
 
+  /* upload */
   .bay{border:1.5px dashed var(--line);border-radius:14px;background:var(--panel);
-       padding:30px 20px;text-align:center;transition:border-color .15s,background .15s;cursor:pointer}
-  .bay:hover{border-color:var(--accent)}
-  .bay.drag{border-color:var(--accent);background:var(--panel-2)}
+       padding:30px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+  .bay:hover,.bay.drag{border-color:var(--accent);background:var(--panel2)}
   .bay strong{display:block;font-size:15px;margin-bottom:4px}
   .bay span{color:var(--muted);font-size:13px}
   input[type=file]{display:none}
+  .status{min-height:20px;margin:12px 2px;font-size:13px;font-family:var(--mono)}
+  .status.ok{color:var(--good)}.status.err{color:var(--err)}.status.busy{color:var(--accent)}
 
-  .status{min-height:20px;margin:14px 2px;font-size:13px;font-family:var(--mono)}
-  .status.ok{color:var(--good)} .status.err{color:var(--warn)} .status.busy{color:var(--accent)}
-
+  /* lista */
   .head{display:flex;justify-content:space-between;align-items:center;margin:28px 2px 12px}
-  .head h2{font-size:14px;font-weight:600;margin:0;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .head h2{font-size:13px;font-weight:600;margin:0;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
   .reload{background:none;border:1px solid var(--line);color:var(--muted);font-size:12px;
           padding:5px 11px;border-radius:7px;cursor:pointer;font-family:var(--mono)}
   .reload:hover{color:var(--text);border-color:var(--accent)}
 
+  /* karta dema */
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
-  .card .name{font-size:15px;font-weight:500;word-break:break-all}
-  .meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin:9px 0;font-family:var(--mono);font-size:12px;color:var(--muted)}
-  .type{color:var(--good)}
-  .type.warn{color:var(--warn)}
-  .actions{display:flex;gap:8px;margin-top:6px}
-  .actions a,.actions button{font-family:var(--mono);font-size:12px;text-decoration:none;
-       border:1px solid var(--line);color:var(--text);background:none;padding:6px 12px;border-radius:7px;cursor:pointer}
-  .actions a:hover,.actions button:hover{border-color:var(--accent);color:var(--accent)}
-  .empty{color:var(--muted);font-size:13px;text-align:center;padding:26px;border:1px dashed var(--line);border-radius:12px}
+  .card .name{font-size:14px;font-weight:500;word-break:break-all}
+  .meta{display:flex;flex-wrap:wrap;gap:5px 14px;margin:8px 0;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .pill{padding:2px 8px;border-radius:5px;font-size:11px;font-family:var(--mono);font-weight:600}
+  .pill.cs2{background:#1a2a1a;color:var(--good)}.pill.pending{background:#1a1a2a;color:var(--accent)}
+  .pill.running{background:#1a1a2a;color:var(--accent);animation:pulse 1s infinite}
+  .pill.done{background:#1a2a1a;color:var(--good)}.pill.error{background:#2a1a1a;color:var(--err)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .btn{font-family:var(--mono);font-size:12px;text-decoration:none;border:1px solid var(--line);
+       color:var(--text);background:none;padding:6px 12px;border-radius:7px;cursor:pointer}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.primary{border-color:var(--accent);color:var(--accent)}
+  .btn.primary:hover{background:var(--accent);color:#000}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+
+  /* panel raportu */
+  .report{margin-top:12px;border-top:1px solid var(--line);padding-top:12px;display:none}
+  .report.open{display:block}
+  .report h3{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px}
+  .scoreline{font-family:var(--mono);font-size:22px;font-weight:700;margin-bottom:14px;color:var(--text)}
+  .section{margin-bottom:14px}
+  .section h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px}
+  table{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--mono)}
+  th{text-align:left;color:var(--muted);padding:3px 8px 5px 0;border-bottom:1px solid var(--line)}
+  td{padding:4px 8px 4px 0;border-bottom:1px solid #1e2230;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .hs{color:var(--warn)}
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:26px;
+         border:1px dashed var(--line);border-radius:12px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>CS2 Demo — magazyn</h1>
-    <span class="tag">krok 1</span>
-  </header>
-  <p class="sub">Wrzuć plik <code>.dem</code> (lub <code>.dem.zst</code>) z peceta. Pojawi się na liście — także na telefonie w tej samej sieci.</p>
+  <header><h1>CS2 Demo — magazyn</h1><span class="tag">krok 2</span></header>
+  <p class="sub">Wrzuć demo, kliknij <strong>analizuj</strong> — za kilka sekund zobaczysz rundy, zabójstwa i granaty.</p>
 
   <div class="bay" id="bay">
     <strong>Upuść demo tutaj</strong>
-    <span>albo dotknij, żeby wybrać plik</span>
+    <span>albo dotknij, żeby wybrać plik .dem</span>
     <input type="file" id="file" accept=".dem,.zst,.gz,.bz2">
   </div>
   <div class="status" id="status"></div>
@@ -73,77 +90,179 @@
 </div>
 
 <script>
-  const bay = document.getElementById('bay');
-  const fileInput = document.getElementById('file');
-  const statusEl = document.getElementById('status');
-  const listEl = document.getElementById('list');
+const bay = document.getElementById('bay');
+const fileInput = document.getElementById('file');
+const statusEl = document.getElementById('status');
+const listEl = document.getElementById('list');
 
-  function setStatus(msg, kind){ statusEl.textContent = msg; statusEl.className = 'status ' + (kind||''); }
-  function fmtSize(b){
-    if(b < 1024) return b + ' B';
-    if(b < 1048576) return (b/1024).toFixed(1) + ' KB';
-    return (b/1048576).toFixed(1) + ' MB';
-  }
-  function fmtTime(iso){ try { return new Date(iso).toLocaleString('pl-PL'); } catch(e){ return iso; } }
+function setStatus(msg, kind){ statusEl.textContent = msg; statusEl.className = 'status '+(kind||''); }
+function fmtSize(b){ if(b<1048576) return (b/1024).toFixed(0)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
+function fmtTime(iso){ try{ return new Date(iso).toLocaleString('pl-PL'); }catch(e){ return iso; } }
 
-  async function upload(file){
-    if(!file) return;
-    setStatus('Wysyłam ' + file.name + ' …', 'busy');
-    const fd = new FormData();
-    fd.append('file', file);
-    try{
-      const res = await fetch('/api/demos', { method:'POST', body: fd });
-      if(!res.ok) throw new Error('Serwer odrzucił plik (' + res.status + ')');
-      const meta = await res.json();
-      setStatus('Gotowe — rozpoznano: ' + meta.type, 'ok');
+async function upload(file){
+  if(!file) return;
+  setStatus('Wysyłam '+file.name+' …','busy');
+  const fd = new FormData(); fd.append('file', file);
+  try{
+    const res = await fetch('/api/demos',{method:'POST',body:fd});
+    if(!res.ok) throw new Error('Serwer odrzucił plik ('+res.status+')');
+    const meta = await res.json();
+    setStatus('Wgrano — '+meta.type+' · '+fmtSize(meta.size_bytes),'ok');
+    loadList();
+  }catch(err){ setStatus('Błąd: '+err.message,'err'); }
+}
+
+bay.addEventListener('click', ()=>fileInput.click());
+fileInput.addEventListener('change', e=>upload(e.target.files[0]));
+bay.addEventListener('dragover', e=>{ e.preventDefault(); bay.classList.add('drag'); });
+bay.addEventListener('dragleave', ()=>bay.classList.remove('drag'));
+bay.addEventListener('drop', e=>{ e.preventDefault(); bay.classList.remove('drag'); upload(e.dataTransfer.files[0]); });
+
+async function startParse(id, btn){
+  btn.disabled = true; btn.textContent = 'analizuję…';
+  await fetch('/api/demos/'+id+'/parse', {method:'POST'});
+  // Polling co 2 sekundy aż status zmieni się z running
+  const interval = setInterval(async ()=>{
+    const meta = await fetch('/api/demos/'+id).then(r=>r.json());
+    if(meta.parse_status !== 'running'){
+      clearInterval(interval);
       loadList();
-    }catch(err){
-      setStatus('Nie udało się: ' + err.message, 'err');
     }
+  }, 2000);
+}
+
+function renderReport(report, container){
+  // Wynik meczu
+  const lastRound = report.rounds[report.rounds.length-1] || {};
+  const tScore  = lastRound.t_score  ?? '?';
+  const ctScore = lastRound.ct_score ?? '?';
+
+  // Top zabójstw (max 10 wierszy)
+  const killRows = report.kills.slice(0,10).map(k=>
+    `<tr>
+      <td>${k.round??''}</td>
+      <td>${k.attacker||'—'}</td>
+      <td>${k.victim||'—'}</td>
+      <td>${k.weapon||'—'}</td>
+      <td>${k.headshot ? '<span class="hs">HS</span>' : ''}</td>
+    </tr>`
+  ).join('');
+
+  // Statystyki graczy
+  const playerRows = Object.entries(report.player_stats)
+    .sort((a,b)=> b[1].kills - a[1].kills)
+    .map(([name, s])=>
+      `<tr>
+        <td>${name}</td>
+        <td>${s.kills}</td>
+        <td>${s.deaths}</td>
+        <td>${s.kills&&s.deaths ? (s.kills/s.deaths).toFixed(2) : s.kills||0}</td>
+        <td>${s.hs}</td>
+        <td>${s.grenades}</td>
+      </tr>`
+    ).join('');
+
+  // Granaty (pierwsze 8)
+  const grenadesRows = report.grenades.slice(0,8).map(g=>
+    `<tr><td>${g.round??''}</td><td>${g.thrower||'—'}</td><td>${g.type||'—'}</td></tr>`
+  ).join('');
+
+  container.innerHTML = `
+    <h3>Wynik · ${report.map}</h3>
+    <div class="scoreline">T ${tScore} : ${ctScore} CT</div>
+
+    <div class="section">
+      <h4>Statystyki graczy (${Object.keys(report.player_stats).length} graczy)</h4>
+      <table>
+        <tr><th>Gracz</th><th>K</th><th>D</th><th>K/D</th><th>HS</th><th>Granaty</th></tr>
+        ${playerRows || '<tr><td colspan="6" style="color:var(--muted)">brak danych</td></tr>'}
+      </table>
+    </div>
+
+    <div class="section">
+      <h4>Zabójstwa · pierwsze 10 z ${report.kills_total}</h4>
+      <table>
+        <tr><th>Runda</th><th>Killer</th><th>Victim</th><th>Broń</th><th></th></tr>
+        ${killRows || '<tr><td colspan="5" style="color:var(--muted)">brak danych</td></tr>'}
+      </table>
+    </div>
+
+    <div class="section">
+      <h4>Granaty · pierwsze 8 z ${report.grenades_total}</h4>
+      <table>
+        <tr><th>Runda</th><th>Gracz</th><th>Typ</th></tr>
+        ${grenadesRows || '<tr><td colspan="3" style="color:var(--muted)">brak danych</td></tr>'}
+      </table>
+    </div>`;
+  container.classList.add('open');
+}
+
+async function toggleReport(id, btn, reportEl){
+  if(reportEl.classList.contains('open')){ reportEl.classList.remove('open'); btn.textContent='pokaż raport'; return; }
+  btn.textContent = 'ładuję…'; btn.disabled = true;
+  try{
+    const res = await fetch('/api/demos/'+id+'/report');
+    if(!res.ok) throw new Error('Raport niedostępny');
+    const report = await res.json();
+    renderReport(report, reportEl);
+    btn.textContent = 'ukryj raport';
+  }catch(e){
+    reportEl.innerHTML = '<p style="color:var(--err);font-size:13px">'+e.message+'</p>';
+    reportEl.classList.add('open');
+    btn.textContent = 'pokaż raport';
   }
+  btn.disabled = false;
+}
 
-  bay.addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', e => upload(e.target.files[0]));
-  bay.addEventListener('dragover', e => { e.preventDefault(); bay.classList.add('drag'); });
-  bay.addEventListener('dragleave', () => bay.classList.remove('drag'));
-  bay.addEventListener('drop', e => {
-    e.preventDefault(); bay.classList.remove('drag');
-    upload(e.dataTransfer.files[0]);
-  });
+async function loadList(){
+  try{
+    const demos = await fetch('/api/demos').then(r=>r.json());
+    if(!demos.length){ listEl.innerHTML='<div class="empty">Pusto. Wrzuć pierwsze demo powyżej.</div>'; return; }
+    listEl.innerHTML = demos.map(d=>{
+      const status = d.parse_status || 'pending';
+      const statusLabel = {pending:'oczekuje',running:'analizuję…',done:'przeanalizowane',error:'błąd'}[status]||status;
+      const canParse = status==='pending'||status==='error';
+      const canReport = status==='done';
+      const extra = d.map ? `<span>${d.map}</span>` : '';
+      const rounds = d.rounds_total ? `<span>${d.rounds_total} rund</span>` : '';
+      const kills  = d.kills_total  ? `<span>${d.kills_total} zaб.</span>` : '';
+      return `<div class="card" id="card-${d.id}">
+        <div class="name">${d.filename||d.stored_as}</div>
+        <div class="meta">
+          <span class="pill ${status}">${statusLabel}</span>
+          <span>${fmtSize(d.size_bytes)}</span>
+          <span>${fmtTime(d.uploaded_at)}</span>
+          ${extra}${rounds}${kills}
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="parse-${d.id}" ${canParse?'':'disabled'}
+            onclick="startParse('${d.id}', this)">
+            ${status==='running'?'analizuję…':'analizuj'}
+          </button>
+          <button class="btn" id="report-${d.id}" ${canReport?'':'disabled'}
+            onclick="toggleReport('${d.id}', this, document.getElementById('report-${d.id}-panel'))">
+            pokaż raport
+          </button>
+          <a class="btn" href="/api/demos/${d.id}/download">pobierz</a>
+        </div>
+        <div class="report" id="report-${d.id}-panel"></div>
+      </div>`;
+    }).join('');
 
-  function copyLink(id){
-    const url = location.origin + '/api/demos/' + id + '/download';
-    navigator.clipboard?.writeText(url);
-    setStatus('Skopiowano link do dema', 'ok');
+    // Jeśli któreś demo jest w trakcie parsowania — automatyczny polling
+    demos.filter(d=>d.parse_status==='running').forEach(d=>{
+      const interval = setInterval(async()=>{
+        const meta = await fetch('/api/demos/'+d.id).then(r=>r.json());
+        if(meta.parse_status!=='running'){ clearInterval(interval); loadList(); }
+      }, 2000);
+    });
+  }catch(err){
+    listEl.innerHTML='<div class="empty">Nie mogę pobrać listy — czy serwer działa?</div>';
   }
+}
 
-  async function loadList(){
-    try{
-      const res = await fetch('/api/demos');
-      const demos = await res.json();
-      if(!demos.length){ listEl.innerHTML = '<div class="empty">Pusto. Wrzuć pierwsze demo powyżej.</div>'; return; }
-      listEl.innerHTML = demos.map(d => {
-        const warn = d.type.includes('nieznany') ? ' warn' : '';
-        return `<div class="card">
-          <div class="name">${d.filename || d.stored_as}</div>
-          <div class="meta">
-            <span class="type${warn}">${d.type}</span>
-            <span>${fmtSize(d.size_bytes)}</span>
-            <span>${fmtTime(d.uploaded_at)}</span>
-          </div>
-          <div class="actions">
-            <a href="/api/demos/${d.id}/download">pobierz</a>
-            <button onclick="copyLink('${d.id}')">kopiuj link</button>
-          </div>
-        </div>`;
-      }).join('');
-    }catch(err){
-      listEl.innerHTML = '<div class="empty">Nie mogę pobrać listy — czy serwer działa?</div>';
-    }
-  }
-
-  document.getElementById('reload').addEventListener('click', loadList);
-  loadList();
+document.getElementById('reload').addEventListener('click', loadList);
+loadList();
 </script>
 </body>
 </html>
