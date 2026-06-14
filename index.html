@@ -308,6 +308,39 @@ function renderPlayerDetail(demoId, name){
       ${ctxRows}
     </div>` : '';
 
+  // Celność smoke'ów
+  const smList = f.smokes_list || [];
+  const susp = f.smokes_suspicious || [];
+  let smokeSection = '';
+  if (smList.length) {
+    const suspRounds = new Set(susp.map(s=>s.round + '|' + s.from));
+    const smokeRows = smList.map(s=>{
+      const bad = s.distance < 250;
+      return `<tr>
+        <td>${s.round}</td>
+        <td>${s.from||'—'}</td>
+        <td>${s.distance}</td>
+        <td>${bad ? '<span class="hs">krótki rzut?</span>' : '<span style="color:var(--good)">ok</span>'}</td>
+      </tr>`;
+    }).join('');
+    const sev = susp.length >= 3 ? 'bad' : (susp.length >= 1 ? 'warn' : 'ok');
+    smokeSection = `
+    <div class="section">
+      <div class="finding ${sev}">
+        <div class="fval">${susp.length}</div>
+        <div class="fbody">
+          <div class="ftitle">Podejrzanie krótkie smoke'i</div>
+          <div class="ftip">Rzuciłeś ${smList.length} smoke'ów, średni dystans rzutu ${f.smokes_avg_dist}. ${susp.length} z nich wylądowało bardzo blisko Ciebie (&lt;250) — mogły odbić się o przeszkodę. Sprawdź te lineupy.</div>
+        </div>
+      </div>
+      <h4>Twoje smoke'i — dystans rzutu</h4>
+      <table>
+        <tr><th>Runda</th><th>Skąd</th><th>Dystans</th><th>Ocena</th></tr>
+        ${smokeRows}
+      </table>
+    </div>`;
+  }
+
   container.innerHTML = `
     <button class="btn back" onclick="renderPlayerSelection('${demoId}')">← wszyscy gracze</button>
     <h3>${name} · ${report.map}</h3>
@@ -319,6 +352,7 @@ function renderPlayerDetail(demoId, name){
       <div class="statbox"><div class="v">${s.grenades}</div><div class="l">Granaty</div></div>
     </div>
     ${findingsSection}
+    ${smokeSection}
     ${spotsSection}
     ${ctxSection}
 

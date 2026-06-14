@@ -65,7 +65,8 @@ def save_meta(demo_id: str, meta: dict) -> None:
 # Parsowanie (awpy) — wywoływane w tle przez BackgroundTasks
 # ---------------------------------------------------------------------------
 
-def compute_findings(players: list, rounds: list, kills: list, grenades: list, tick_rate) -> dict:
+def compute_findings(players: list, rounds: list, kills: list, grenades: list,
+                     smokes: list, infernos: list, tick_rate) -> dict:
     """
     Silnik wniosków — dla każdego gracza liczy kilka reguł analizy.
     Działa na już sparsowanych danych (kills, grenades, rounds).
@@ -163,6 +164,14 @@ def compute_findings(players: list, rounds: list, kills: list, grenades: list, t
                 "killer": d["attacker"], "weapon": d["weapon"], "tags": tags,
             })
 
+        # REGUŁA 5 — celność smoke'ów (dystans rzutu)
+        # Bardzo krótki rzut = smoke prawdopodobnie odbił się o przeszkodę.
+        # Próg orientacyjny, do kalibracji na większej liczbie rzutów.
+        SHORT_THROW = 250
+        my_smokes = [s for s in smokes if s["thrower"] == player and s["distance"] is not None]
+        suspicious_smokes = [s for s in my_smokes if s["distance"] < SHORT_THROW]
+        avg_throw = round(sum(s["distance"] for s in my_smokes) / len(my_smokes)) if my_smokes else 0
+
         findings[player] = {
             "deaths_total":     total_deaths,
             "deaths_no_utility": deaths_no_utility,
@@ -173,6 +182,10 @@ def compute_findings(players: list, rounds: list, kills: list, grenades: list, t
             "entry_deaths":     entry_deaths,
             "worst_spots":      worst_spots,
             "death_contexts":   death_contexts,
+            "smokes_total":     len(my_smokes),
+            "smokes_avg_dist":  avg_throw,
+            "smokes_suspicious": suspicious_smokes,
+            "smokes_list":      my_smokes,
         }
     return findings
 
@@ -292,10 +305,35 @@ def _do_parse(demo_id: str, dem_path: Path) -> None:
                 s = player_stats.setdefault(name, {"kills": 0, "deaths": 0, "hs": 0, "grenades": 0})
                 s["grenades"] += 1
 
+        # Smoke'i i mołotowy — osobne tabele awpy, JEDEN wiersz = jeden rzut,
+        # z pozycją lądowania (X,Y) i pozycją rzucającego (thrower_X/Y).
+        def parse_utility(df):
+            items = []
+            if df is not None and len(df) > 0:
+                for row in df.to_dicts():
+                    tx, ty = row.get("thrower_X"), row.get("thrower_Y")
+                    lx, ly = row.get("X"), row.get("Y")
+                    dist = None
+                    if None not in (tx, ty, lx, ly):
+                        dist = round(((tx - lx) ** 2 + (ty - ly) ** 2) ** 0.5)
+                    items.append({
+                        "round":    row.get("round_num"),
+                        "thrower":  row.get("thrower_name"),
+                        "side":     row.get("thrower_side"),
+                        "from":     row.get("thrower_place"),
+                        "land_x":   round(lx, 1) if lx is not None else None,
+                        "land_y":   round(ly, 1) if ly is not None else None,
+                        "distance": dist,
+                    })
+            return items
+
+        smokes = parse_utility(getattr(dem, "smokes", None))
+        infernos = parse_utility(getattr(dem, "infernos", None))
+
         # Silnik wniosków — analiza per gracz
         players = list(player_stats.keys())
         player_findings = compute_findings(
-            players, rounds, kills, grenades, header.get("tick_rate")
+            players, rounds, kills, grenades, smokes, infernos, header.get("tick_rate")
         )
 
         report = {
@@ -310,6 +348,8 @@ def _do_parse(demo_id: str, dem_path: Path) -> None:
             "kills":          kills,
             "grenades_total": len(grenades),
             "grenades":       grenades,
+            "smokes":         smokes,
+            "infernos":       infernos,
             "player_stats":   player_stats,
             "player_findings": player_findings,
             "parsed_at":      datetime.datetime.now(datetime.timezone.utc).isoformat(),
