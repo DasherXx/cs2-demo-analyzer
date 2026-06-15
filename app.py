@@ -314,28 +314,78 @@ def _do_parse(demo_id: str, dem_path: Path) -> None:
                     "tick":    row.get("tick"),
                 })
 
-        # Statystyki per gracz — kills, deaths, HS, granaty
-        player_stats: dict[str, dict] = {}
-        if kills_df is not None and len(kills_df) > 0:
-            for row in kills_df.to_dicts():
-                for role, name_key in [("kill", "attacker_name"), ("death", "victim_name")]:
-                    name = row.get(name_key)
-                    if not name:
-                        continue
-                    s = player_stats.setdefault(name, {"kills": 0, "deaths": 0, "hs": 0, "grenades": 0})
-                    if role == "kill":
-                        s["kills"] += 1
-                        if row.get("headshot"):
-                            s["hs"] += 1
-                    else:
-                        s["deaths"] += 1
+        # --- Drużyny i połowy (wykrywane z danych, bez założeń o formacie) ---
+        kills_sorted = sorted(kills, key=lambda x: (x["round"] or 0, x["tick"] or 0))
 
-        # Granaty per gracz — liczymy z odfiltrowanej listy RZUTÓW (nie ticków)
+        # 1) strona startowa gracza = strona z najwcześniejszej rundy, w której się pojawia
+        first_side = {}
+        for k in kills_sorted:
+            for who, side in [(k["attacker"], k["attacker_side"]), (k["victim"], k["victim_side"])]:
+                if who and side and who not in first_side:
+                    first_side[who] = side
+
+        # 2) wykryj rundę zmiany stron = pierwsza runda, gdy ktoś gra inną stroną niż startową
+        swap_round = None
+        for k in kills_sorted:
+            for who, side in [(k["attacker"], k["attacker_side"]), (k["victim"], k["victim_side"])]:
+                if who in first_side and side and side != first_side[who]:
+                    if swap_round is None or (k["round"] or 0) < swap_round:
+                        swap_round = k["round"]
+        if not swap_round:
+            swap_round = 9999  # brak zmiany stron (krótki mecz) — wszystko jako 1. połowa
+
+        def half_of(rnd):
+            return 1 if (rnd or 0) < swap_round else 2
+
+        # 3) statystyki per gracz, z rozbiciem na połowy
+        def _new_stat():
+            return {"kills": 0, "deaths": 0, "hs": 0, "assists": 0, "grenades": 0,
+                    "h1": {"k": 0, "a": 0, "d": 0}, "h2": {"k": 0, "a": 0, "d": 0}}
+
+        player_stats: dict[str, dict] = {}
+        for k in kills:
+            h = "h1" if half_of(k["round"]) == 1 else "h2"
+            a, v, ast = k["attacker"], k["victim"], k["assistedby"]
+            if a:
+                s = player_stats.setdefault(a, _new_stat())
+                s["kills"] += 1
+                s[h]["k"] += 1
+                if k["headshot"]:
+                    s["hs"] += 1
+            if v:
+                s = player_stats.setdefault(v, _new_stat())
+                s["deaths"] += 1
+                s[h]["d"] += 1
+            if ast:
+                s = player_stats.setdefault(ast, _new_stat())
+                s["assists"] += 1
+                s[h]["a"] += 1
+
         for g in grenades:
-            name = g.get("thrower")
-            if name:
-                s = player_stats.setdefault(name, {"kills": 0, "deaths": 0, "hs": 0, "grenades": 0})
-                s["grenades"] += 1
+            if g.get("thrower"):
+                player_stats.setdefault(g["thrower"], _new_stat())["grenades"] += 1
+
+        for name in player_stats:
+            player_stats[name]["start_side"] = first_side.get(name, "?")
+
+        # 4) wyniki per połowa i per drużyna (A = zaczynała CT, B = zaczynała T)
+        h1_ct = h1_t = h2_ct = h2_t = 0
+        for r in rounds:
+            rn, w = r.get("round"), r.get("winner")
+            if not rn or w not in ("T", "CT"):
+                continue
+            if half_of(rn) == 1:
+                h1_ct += (w == "CT"); h1_t += (w == "T")
+            else:
+                h2_ct += (w == "CT"); h2_t += (w == "T")
+
+        teams = {
+            "ct_start_score": h1_ct + h2_t,   # A: CT w 1. poł, T w 2. poł
+            "t_start_score":  h1_t + h2_ct,   # B: T w 1. poł, CT w 2. poł
+            "swap_round":     swap_round,
+            "h1": {"a": h1_ct, "b": h1_t},
+            "h2": {"a": h2_t,  "b": h2_ct},
+        }
 
         # Smoke'i i mołotowy — osobne tabele awpy, JEDEN wiersz = jeden rzut,
         # z pozycją lądowania (X,Y) i pozycją rzucającego (thrower_X/Y).
@@ -387,6 +437,7 @@ def _do_parse(demo_id: str, dem_path: Path) -> None:
             "server":         header.get("server_name", ""),
             "tick_rate":      header.get("tick_rate"),
             "score":          {"t": t_score, "ct": ct_score},
+            "teams":          teams,
             "rounds_total":   len(rounds),
             "rounds":         rounds,
             "kills_total":    len(kills),
