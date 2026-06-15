@@ -66,7 +66,9 @@ def save_meta(demo_id: str, meta: dict) -> None:
 # ---------------------------------------------------------------------------
 
 def compute_findings(players: list, rounds: list, kills: list, grenades: list,
-                     smokes: list, infernos: list, tick_rate) -> dict:
+                     smokes: list, infernos: list, tick_rate,
+                     map_name: str = "?", library: dict = None) -> dict:
+    library = library or {}
     """
     Silnik wniosków — dla każdego gracza liczy kilka reguł analizy.
     Działa na już sparsowanych danych (kills, grenades, rounds).
@@ -172,6 +174,33 @@ def compute_findings(players: list, rounds: list, kills: list, grenades: list,
         suspicious_smokes = [s for s in my_smokes if s["distance"] < SHORT_THROW]
         avg_throw = round(sum(s["distance"] for s in my_smokes) / len(my_smokes)) if my_smokes else 0
 
+        # REGUŁA 6 — celność wg biblioteki wzorcowej (z klasteryzacji dem pro)
+        # Dla każdego smoke'a szukamy najbliższego kanonicznego spotu.
+        #  - w promieniu spotu          -> trafiony lineup
+        #  - blisko, ale poza promieniem -> "celowałeś tu, ale wyszło niecelnie"
+        #  - daleko od wszystkich        -> improwizacja (nie oceniamy)
+        MISS_MARGIN = 250     # ile poza strefą akceptacji liczymy jeszcze jako "near miss"
+        SMOKE_TOLERANCE = 130  # realny zasięg dymu — w tym promieniu od wzorca smoke spełnia rolę
+        smokes_ontarget = 0
+        smokes_offtarget = []
+        for sm in [s for s in smokes if s["thrower"] == player and s["land_x"] is not None]:
+            spots = library.get(f"{map_name}|{sm['side']}|smoke", [])
+            if not spots:
+                continue
+            best = min(spots, key=lambda sp: (sp["x"] - sm["land_x"]) ** 2 + (sp["y"] - sm["land_y"]) ** 2)
+            dist = ((best["x"] - sm["land_x"]) ** 2 + (best["y"] - sm["land_y"]) ** 2) ** 0.5
+            accept = best["radius"] + SMOKE_TOLERANCE   # strefa, w której smoke nadal spełnia rolę
+            if dist <= accept:
+                smokes_ontarget += 1
+            elif dist <= accept + MISS_MARGIN:
+                smokes_offtarget.append({
+                    "round":       sm["round"],
+                    "from":        sm["from"],
+                    "target_from": best["common_from"],
+                    "off_by":      round(dist - accept),
+                })
+            # else: za daleko od jakiegokolwiek spotu = improwizacja, pomijamy
+
         findings[player] = {
             "deaths_total":     total_deaths,
             "deaths_no_utility": deaths_no_utility,
@@ -186,6 +215,9 @@ def compute_findings(players: list, rounds: list, kills: list, grenades: list,
             "smokes_avg_dist":  avg_throw,
             "smokes_suspicious": suspicious_smokes,
             "smokes_list":      my_smokes,
+            "smokes_ontarget":  smokes_ontarget,
+            "smokes_offtarget": smokes_offtarget,
+            "has_library":      bool(library.get(f"{map_name}|ct|smoke") or library.get(f"{map_name}|t|smoke")),
         }
     return findings
 
@@ -330,10 +362,23 @@ def _do_parse(demo_id: str, dem_path: Path) -> None:
         smokes = parse_utility(getattr(dem, "smokes", None))
         infernos = parse_utility(getattr(dem, "infernos", None))
 
+        # Wczytujemy bibliotekę wzorcową (zbudowaną przez build_library.py).
+        # Wczytujemy świeżo przy każdej analizie, więc podmiana biblioteki działa od razu.
+        lib_path = BASE / "utility_library.json"
+        library = {}
+        if lib_path.exists():
+            try:
+                library = json.loads(lib_path.read_text(encoding="utf-8"))
+            except Exception:
+                library = {}
+
+        map_name = header.get("map_name", "nieznana")
+
         # Silnik wniosków — analiza per gracz
         players = list(player_stats.keys())
         player_findings = compute_findings(
-            players, rounds, kills, grenades, smokes, infernos, header.get("tick_rate")
+            players, rounds, kills, grenades, smokes, infernos,
+            header.get("tick_rate"), map_name, library
         )
 
         report = {

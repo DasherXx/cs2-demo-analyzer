@@ -308,36 +308,44 @@ function renderPlayerDetail(demoId, name){
       ${ctxRows}
     </div>` : '';
 
-  // Celność smoke'ów
-  const smList = f.smokes_list || [];
-  const susp = f.smokes_suspicious || [];
+  // Celność smoke'ów wg biblioteki wzorcowej
+  const offt = f.smokes_offtarget || [];
+  const ont = f.smokes_ontarget || 0;
   let smokeSection = '';
-  if (smList.length) {
-    const suspRounds = new Set(susp.map(s=>s.round + '|' + s.from));
-    const smokeRows = smList.map(s=>{
-      const bad = s.distance < 250;
-      return `<tr>
-        <td>${s.round}</td>
-        <td>${s.from||'—'}</td>
-        <td>${s.distance}</td>
-        <td>${bad ? '<span class="hs">krótki rzut?</span>' : '<span style="color:var(--good)">ok</span>'}</td>
-      </tr>`;
-    }).join('');
-    const sev = susp.length >= 3 ? 'bad' : (susp.length >= 1 ? 'warn' : 'ok');
+  if (f.has_library) {
+    const checked = ont + offt.length;
+    const sev = offt.length >= 4 ? 'bad' : (offt.length >= 1 ? 'warn' : 'ok');
+    const offRows = offt.map(o=>`<tr>
+        <td>${o.round}</td>
+        <td>${o.from||'—'}</td>
+        <td>${o.target_from||'—'}</td>
+        <td class="hs">${o.off_by}</td>
+      </tr>`).join('') || '<tr><td colspan="4" style="color:var(--good)">brak — wszystkie trafione 👌</td></tr>';
     smokeSection = `
     <div class="section">
       <div class="finding ${sev}">
-        <div class="fval">${susp.length}</div>
+        <div class="fval">${offt.length}</div>
         <div class="fbody">
-          <div class="ftitle">Podejrzanie krótkie smoke'i</div>
-          <div class="ftip">Rzuciłeś ${smList.length} smoke'ów, średni dystans rzutu ${f.smokes_avg_dist}. ${susp.length} z nich wylądowało bardzo blisko Ciebie (&lt;250) — mogły odbić się o przeszkodę. Sprawdź te lineupy.</div>
+          <div class="ftitle">Niecelne smoke'i (wg wzorców pro)</div>
+          <div class="ftip">Z ${checked} smoke'ów porównanych z bazą lineupów, ${ont} trafiło w standardowy spot, a ${offt.length} wylądowało obok — celowałeś w znany rzut, ale wyszło niecelnie. Te lineupy warto przećwiczyć.</div>
         </div>
       </div>
-      <h4>Twoje smoke'i — dystans rzutu</h4>
+      ${offt.length ? `<h4>Smoke'i do poprawy</h4>
       <table>
-        <tr><th>Runda</th><th>Skąd</th><th>Dystans</th><th>Ocena</th></tr>
-        ${smokeRows}
-      </table>
+        <tr><th>Runda</th><th>Skąd rzucał</th><th>Cel (typowo z)</th><th>Poza o</th></tr>
+        ${offRows}
+      </table>` : ''}
+    </div>`;
+  } else if ((f.smokes_total||0) > 0) {
+    smokeSection = `
+    <div class="section">
+      <div class="finding ok">
+        <div class="fval">—</div>
+        <div class="fbody">
+          <div class="ftitle">Celność smoke'ów</div>
+          <div class="ftip">Brak biblioteki wzorcowej dla mapy ${report.map}. Zbuduj ją z dem pro (build_library.py) dla tej mapy, żeby oceniać celność rzutów.</div>
+        </div>
+      </div>
     </div>`;
   }
 
