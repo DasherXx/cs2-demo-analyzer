@@ -1,0 +1,1106 @@
+{
+  "de_anubis|ct|molotov": [
+    {
+      "x": -221.8,
+      "y": 186.1,
+      "radius": 318.6,
+      "count": 84,
+      "common_from": "Middle"
+    },
+    {
+      "x": 1275.2,
+      "y": 866.6,
+      "radius": 326.6,
+      "count": 54,
+      "common_from": "Main"
+    },
+    {
+      "x": -1606.9,
+      "y": 258.4,
+      "radius": 168.8,
+      "count": 25,
+      "common_from": "BombsiteB"
+    },
+    {
+      "x": 162.7,
+      "y": 569.1,
+      "radius": 130.0,
+      "count": 6,
+      "common_from": "Canal"
+    },
+    {
+      "x": 723.4,
+      "y": 1322.9,
+      "radius": 133.8,
+      "count": 5,
+      "common_from": "Heaven"
+    },
+    {
+      "x": -795.4,
+      "y": 238.2,
+      "radius": 173.4,
+      "count": 5,
+      "common_from": "BombsiteB"
+    },
+    {
+      "x": 1312.7,
+      "y": 532.2,
+      "radius": 31.8,
+      "count": 3,
+      "common_from": "Walkway"
+    }
+  ],
+  "de_anubis|ct|smoke": [
+    {
+      "x": -248.2,
+      "y": 176.5,
+      "radius": 281.7,
+      "count": 88,
+      "common_from": "Middle"
+    },
+    {
+      "x": -1580.6,
+      "y": 346.0,
+      "radius": 245.2,
+      "count": 52,
+      "common_from": "BombsiteB"
+    },
+    {
+      "x": 1392.6,
+      "y": 851.0,
+      "radius": 149.0,
+      "count": 37,
+      "common_from": "Main"
+    },
+    {
+      "x": 811.1,
+      "y": -96.2,
+      "radius": 175.0,
+      "count": 35,
+      "common_from": "Middle"
+    },
+    {
+      "x": 1716.5,
+      "y": 1308.7,
+      "radius": 100.3,
+      "count": 12,
+      "common_from": "BombsiteA"
+    },
+    {
+      "x": 589.0,
+      "y": 1282.1,
+      "radius": 68.6,
+      "count": 5,
+      "common_from": "BombsiteA"
+    },
+    {
+      "x": 215.6,
+      "y": 568.9,
+      "radius": 79.6,
+      "count": 4,
+      "common_from": "Middle"
+    },
+    {
+      "x": -803.4,
+      "y": 315.4,
+      "radius": 42.5,
+      "count": 3,
+      "common_from": "BombsiteB"
+    },
+    {
+      "x": -1046.0,
+      "y": 565.7,
+      "radius": 103.8,
+      "count": 3,
+      "common_from": "BombsiteB"
+    }
+  ],
+  "de_anubis|t|molotov": [
+    {
+      "x": 259.2,
+      "y": 514.9,
+      "radius": 166.9,
+      "count": 61,
+      "common_from": "Ruins"
+    },
+    {
+      "x": -1104.8,
+      "y": 369.9,
+      "radius": 230.6,
+      "count": 17,
+      "common_from": "OutsideLong"
+    },
+    {
+      "x": 1568.6,
+      "y": 1101.5,
+      "radius": 161.8,
+      "count": 16,
+      "common_from": "Canal"
+    },
+    {
+      "x": 1040.8,
+      "y": 2000.3,
+      "radius": 193.7,
+      "count": 15,
+      "common_from": "Canal"
+    },
+    {
+      "x": -843.7,
+      "y": 1134.7,
+      "radius": 131.1,
+      "count": 12,
+      "common_from": "BombsiteB"
+    },
+    {
+      "x": -747.5,
+      "y": 330.9,
+      "radius": 55.7,
+      "count": 11,
+      "common_from": "Canal"
+    },
+    {
+      "x": -12.8,
+      "y": 788.4,
+      "radius": 101.0,
+      "count": 11,
+      "common_from": "Bridge"
+    },
+    {
+      "x": 1317.4,
+      "y": 859.5,
+      "radius": 160.7,
+      "count": 10,
+      "common_from": "Canal"
+    },
+    {
+      "x": 824.7,
+      "y": 1578.4,
+      "radius": 96.5,
+      "count": 9,
+      "common_from": "Canal"
+    },
+    {
+      "x": 1702.7,
+      "y": 1910.2,
+      "radius": 150.4,
+      "count": 8,
+      "common_from": "Main"
+    },
+    {
+      "x": -645.9,
+      "y": 613.6,
+      "radius": 112.8,
+      "count": 6,
+      "common_from": "Connector"
+    },
+    {
+      "x": 577.0,
+      "y": 1284.1,
+      "radius": 121.1,
+      "count": 5,
+      "common_from": "TSideUpper"
+    },
+    {
+      "x": -421.7,
+      "y": 92.7,
+      "radius": 86.5,
+      "count": 5,
+      "common_from": "BombsiteB"
+    },
+    {
+      "x": 41.3,
+      "y": 137.1,
+      "radius": 116.0,
+      "count": 5,
+      "common_from": "Ruins"
+    },
+    {
+      "x": 531.7,
+      "y": 174.8,
+      "radius": 86.1,
+      "count": 4,
+      "common_from": "Street"
+    },
+    {
+      "x": 960.4,
+      "y": 2256.4,
+      "radius": 97.3,
+      "count": 4,
+      "common_from": "Main"
+    },
+    {
+      "x": 82.8,
+      "y": 1603.6,
+      "radius": 73.3,
+      "count": 3,
+      "common_from": "MidDoors"
+    }
+  ],
+  "de_anubis|t|smoke": [
+    {
+      "x": 378.2,
+      "y": 1411.5,
+      "radius": 463.1,
+      "count": 55,
+      "common_from": "Middle"
+    },
+    {
+      "x": -652.2,
+      "y": 197.5,
+      "radius": 188.9,
+      "count": 51,
+      "common_from": "Street"
+    },
+    {
+      "x": -903.8,
+      "y": 1145.2,
+      "radius": 125.6,
+      "count": 32,
+      "common_from": "OutsideLong"
+    },
+    {
+      "x": -1237.5,
+      "y": 935.1,
+      "radius": 262.6,
+      "count": 24,
+      "common_from": "OutsideLong"
+    },
+    {
+      "x": -44.9,
+      "y": 830.5,
+      "radius": 195.1,
+      "count": 24,
+      "common_from": "Bridge"
+    },
+    {
+      "x": -1463.4,
+      "y": 448.1,
+      "radius": 165.7,
+      "count": 23,
+      "common_from": "Ruins"
+    },
+    {
+      "x": 1665.2,
+      "y": 1385.4,
+      "radius": 183.8,
+      "count": 21,
+      "common_from": "Canal"
+    },
+    {
+      "x": 997.9,
+      "y": 2248.9,
+      "radius": 129.8,
+      "count": 18,
+      "common_from": "Canal"
+    },
+    {
+      "x": -416.6,
+      "y": 84.8,
+      "radius": 127.6,
+      "count": 6,
+      "common_from": "Ruins"
+    },
+    {
+      "x": 1515.1,
+      "y": 1677.9,
+      "radius": 88.2,
+      "count": 3,
+      "common_from": "Main"
+    }
+  ],
+  "de_dust2|ct|molotov": [
+    {
+      "x": -1989.6,
+      "y": 1599.4,
+      "radius": 276.2,
+      "count": 74,
+      "common_from": "BombsiteB"
+    },
+    {
+      "x": 595.5,
+      "y": 807.2,
+      "radius": 426.8,
+      "count": 63,
+      "common_from": "LongA"
+    },
+    {
+      "x": 399.4,
+      "y": 1894.2,
+      "radius": 126.5,
+      "count": 24,
+      "common_from": "UnderA"
+    },
+    {
+      "x": 163.3,
+      "y": 1394.0,
+      "radius": 102.4,
+      "count": 15,
+      "common_from": "UnderA"
+    },
+    {
+      "x": -95.1,
+      "y": 384.6,
+      "radius": 112.2,
+      "count": 9,
+      "common_from": "MidDoors"
+    },
+    {
+      "x": -241.2,
+      "y": 1300.2,
+      "radius": 98.7,
+      "count": 7,
+      "common_from": "ShortStairs"
+    },
+    {
+      "x": -420.5,
+      "y": 1778.9,
+      "radius": 171.6,
+      "count": 7,
+      "common_from": "CTSpawn"
+    },
+    {
+      "x": -976.5,
+      "y": 1400.6,
+      "radius": 127.5,
+      "count": 4,
+      "common_from": "Catwalk"
+    },
+    {
+      "x": 1142.0,
+      "y": 2585.7,
+      "radius": 130.5,
+      "count": 4,
+      "common_from": "ShortStairs"
+    },
+    {
+      "x": 1390.3,
+      "y": 2384.1,
+      "radius": 21.0,
+      "count": 3,
+      "common_from": "ShortStairs"
+    }
+  ],
+  "de_dust2|ct|smoke": [
+    {
+      "x": -1987.5,
+      "y": 1533.1,
+      "radius": 296.6,
+      "count": 94,
+      "common_from": "BombsiteB"
+    },
+    {
+      "x": 581.1,
+      "y": 648.6,
+      "radius": 165.1,
+      "count": 87,
+      "common_from": "LongA"
+    },
+    {
+      "x": 392.8,
+      "y": 1927.2,
+      "radius": 116.9,
+      "count": 27,
+      "common_from": "BombsiteA"
+    },
+    {
+      "x": 124.7,
+      "y": 1442.9,
+      "radius": 112.5,
+      "count": 21,
+      "common_from": "UnderA"
+    },
+    {
+      "x": -411.9,
+      "y": 1669.2,
+      "radius": 234.5,
+      "count": 18,
+      "common_from": "CTSpawn"
+    },
+    {
+      "x": 1419.5,
+      "y": 1402.0,
+      "radius": 66.0,
+      "count": 13,
+      "common_from": "UnderA"
+    },
+    {
+      "x": -394.2,
+      "y": 1289.7,
+      "radius": 93.8,
+      "count": 6,
+      "common_from": "MidDoors"
+    },
+    {
+      "x": 1077.7,
+      "y": 2620.6,
+      "radius": 132.0,
+      "count": 4,
+      "common_from": "BombsiteA"
+    },
+    {
+      "x": 493.8,
+      "y": 2487.2,
+      "radius": 107.7,
+      "count": 3,
+      "common_from": "ShortStairs"
+    },
+    {
+      "x": 496.1,
+      "y": -12.3,
+      "radius": 8.7,
+      "count": 3,
+      "common_from": "ShortStairs"
+    }
+  ],
+  "de_dust2|t|molotov": [
+    {
+      "x": -145.1,
+      "y": 1466.3,
+      "radius": 124.0,
+      "count": 33,
+      "common_from": "TopofMid"
+    },
+    {
+      "x": 1765.3,
+      "y": 2001.0,
+      "radius": 190.3,
+      "count": 16,
+      "common_from": "LongDoors"
+    },
+    {
+      "x": 350.2,
+      "y": 1609.3,
+      "radius": 151.0,
+      "count": 16,
+      "common_from": "LowerTunnel"
+    },
+    {
+      "x": -1205.0,
+      "y": 2618.7,
+      "radius": 158.4,
+      "count": 15,
+      "common_from": "BombsiteB"
+    },
+    {
+      "x": 464.6,
+      "y": 1971.6,
+      "radius": 96.2,
+      "count": 11,
+      "common_from": "Catwalk"
+    },
+    {
+      "x": 766.0,
+      "y": 2145.1,
+      "radius": 133.8,
+      "count": 10,
+      "common_from": "ExtendedA"
+    },
+    {
+      "x": -647.0,
+      "y": 1373.8,
+      "radius": 101.5,
+      "count": 8,
+      "common_from": "TopofMid"
+    },
+    {
+      "x": 1069.5,
+      "y": 2628.5,
+      "radius": 170.4,
+      "count": 7,
+      "common_from": "ExtendedA"
+    },
+    {
+      "x": -1597.6,
+      "y": 2782.2,
+      "radius": 86.2,
+      "count": 5,
+      "common_from": "UpperTunnel"
+    },
+    {
+      "x": -412.2,
+      "y": 1329.2,
+      "radius": 109.0,
+      "count": 5,
+      "common_from": "TopofMid"
+    },
+    {
+      "x": 1434.8,
+      "y": 2528.8,
+      "radius": 67.4,
+      "count": 4,
+      "common_from": "ExtendedA"
+    },
+    {
+      "x": -1119.4,
+      "y": 1131.8,
+      "radius": 89.8,
+      "count": 4,
+      "common_from": "UpperTunnel"
+    },
+    {
+      "x": 1176.0,
+      "y": 2960.2,
+      "radius": 37.7,
+      "count": 4,
+      "common_from": "ShortStairs"
+    },
+    {
+      "x": -2049.6,
+      "y": 3058.2,
+      "radius": 106.6,
+      "count": 4,
+      "common_from": "UpperTunnel"
+    },
+    {
+      "x": 57.9,
+      "y": 2069.0,
+      "radius": 107.9,
+      "count": 4,
+      "common_from": "MidDoors"
+    },
+    {
+      "x": 537.5,
+      "y": 2708.0,
+      "radius": 89.6,
+      "count": 3,
+      "common_from": "ARamp"
+    },
+    {
+      "x": 39.7,
+      "y": 1479.9,
+      "radius": 54.8,
+      "count": 3,
+      "common_from": "TopofMid"
+    },
+    {
+      "x": -2083.0,
+      "y": 1986.2,
+      "radius": 82.8,
+      "count": 3,
+      "common_from": "UpperTunnel"
+    },
+    {
+      "x": 644.8,
+      "y": 870.4,
+      "radius": 79.8,
+      "count": 3,
+      "common_from": "LongDoors"
+    },
+    {
+      "x": -891.4,
+      "y": 1501.8,
+      "radius": 58.6,
+      "count": 3,
+      "common_from": "TunnelStairs"
+    },
+    {
+      "x": -492.7,
+      "y": 1708.6,
+      "radius": 64.2,
+      "count": 3,
+      "common_from": "Catwalk"
+    }
+  ],
+  "de_dust2|t|smoke": [
+    {
+      "x": -429.4,
+      "y": 1627.0,
+      "radius": 60.7,
+      "count": 62,
+      "common_from": "TopofMid"
+    },
+    {
+      "x": -153.0,
+      "y": 2196.4,
+      "radius": 167.2,
+      "count": 45,
+      "common_from": "MidDoors"
+    },
+    {
+      "x": -1254.9,
+      "y": 2246.6,
+      "radius": 192.0,
+      "count": 34,
+      "common_from": "UpperTunnel"
+    },
+    {
+      "x": 1130.5,
+      "y": 2164.4,
+      "radius": 261.1,
+      "count": 30,
+      "common_from": "LongDoors"
+    },
+    {
+      "x": -299.7,
+      "y": 1434.5,
+      "radius": 67.1,
+      "count": 23,
+      "common_from": "OutsideLong"
+    },
+    {
+      "x": 1349.2,
+      "y": 1226.1,
+      "radius": 237.4,
+      "count": 21,
+      "common_from": "OutsideLong"
+    },
+    {
+      "x": 533.4,
+      "y": 2099.3,
+      "radius": 254.3,
+      "count": 21,
+      "common_from": "ShortStairs"
+    },
+    {
+      "x": -1955.5,
+      "y": 1867.3,
+      "radius": 138.0,
+      "count": 16,
+      "common_from": "UpperTunnel"
+    },
+    {
+      "x": -525.8,
+      "y": 2093.4,
+      "radius": 149.9,
+      "count": 9,
+      "common_from": "LowerTunnel"
+    },
+    {
+      "x": 585.5,
+      "y": 2380.3,
+      "radius": 34.9,
+      "count": 7,
+      "common_from": "ShortStairs"
+    }
+  ],
+  "de_mirage|ct|molotov": [
+    {
+      "x": 437.2,
+      "y": -661.4,
+      "radius": 174.7,
+      "count": 19,
+      "common_from": "SnipersNest"
+    },
+    {
+      "x": 306.0,
+      "y": -1527.8,
+      "radius": 126.0,
+      "count": 16,
+      "common_from": "BombsiteA"
+    },
+    {
+      "x": -1057.8,
+      "y": 675.3,
+      "radius": 51.3,
+      "count": 10,
+      "common_from": "Truck"
+    },
+    {
+      "x": -1402.8,
+      "y": 735.4,
+      "radius": 123.1,
+      "count": 5,
+      "common_from": "BombsiteB"
+    },
+    {
+      "x": -1000.8,
+      "y": -348.1,
+      "radius": 41.1,
+      "count": 3,
+      "common_from": "Connector"
+    }
+  ],
+  "de_mirage|ct|smoke": [
+    {
+      "x": 73.3,
+      "y": -2293.6,
+      "radius": 84.7,
+      "count": 21,
+      "common_from": "BombsiteA"
+    },
+    {
+      "x": -657.3,
+      "y": -725.5,
+      "radius": 116.1,
+      "count": 12,
+      "common_from": "Jungle"
+    },
+    {
+      "x": -1415.9,
+      "y": 736.8,
+      "radius": 150.6,
+      "count": 11,
+      "common_from": "BombsiteB"
+    },
+    {
+      "x": -981.8,
+      "y": -338.4,
+      "radius": 75.2,
+      "count": 6,
+      "common_from": "Catwalk"
+    },
+    {
+      "x": 328.3,
+      "y": -1497.3,
+      "radius": 32.6,
+      "count": 6,
+      "common_from": "BombsiteA"
+    },
+    {
+      "x": -1143.4,
+      "y": 675.8,
+      "radius": 50.5,
+      "count": 4,
+      "common_from": "BombsiteB"
+    }
+  ],
+  "de_mirage|t|molotov": [
+    {
+      "x": -2172.1,
+      "y": -52.6,
+      "radius": 213.6,
+      "count": 7,
+      "common_from": "BombsiteB"
+    },
+    {
+      "x": -1035.5,
+      "y": -640.0,
+      "radius": 58.6,
+      "count": 6,
+      "common_from": "TopofMid"
+    },
+    {
+      "x": -1217.9,
+      "y": -1294.2,
+      "radius": 107.1,
+      "count": 5,
+      "common_from": "BombsiteA"
+    },
+    {
+      "x": 118.6,
+      "y": -1975.0,
+      "radius": 113.3,
+      "count": 4,
+      "common_from": "PalaceInterior"
+    }
+  ],
+  "de_mirage|t|smoke": [
+    {
+      "x": -1181.2,
+      "y": -626.3,
+      "radius": 90.8,
+      "count": 22,
+      "common_from": "SideAlley"
+    },
+    {
+      "x": -21.7,
+      "y": -480.9,
+      "radius": 159.0,
+      "count": 15,
+      "common_from": "TSpawn"
+    },
+    {
+      "x": -647.9,
+      "y": -938.8,
+      "radius": 145.4,
+      "count": 7,
+      "common_from": "TSpawn"
+    },
+    {
+      "x": -663.1,
+      "y": -1627.1,
+      "radius": 71.8,
+      "count": 5,
+      "common_from": "TRamp"
+    },
+    {
+      "x": -1931.7,
+      "y": -345.8,
+      "radius": 5.7,
+      "count": 4,
+      "common_from": "BackAlley"
+    },
+    {
+      "x": -486.7,
+      "y": -1549.5,
+      "radius": 28.5,
+      "count": 3,
+      "common_from": "PalaceAlley"
+    },
+    {
+      "x": -684.4,
+      "y": -1288.0,
+      "radius": 91.7,
+      "count": 3,
+      "common_from": "Underpass"
+    }
+  ],
+  "de_nuke|ct|molotov": [
+    {
+      "x": 131.3,
+      "y": -2156.9,
+      "radius": 111.8,
+      "count": 7,
+      "common_from": "Outside"
+    },
+    {
+      "x": 276.0,
+      "y": -1233.4,
+      "radius": 55.3,
+      "count": 7,
+      "common_from": "Rafters"
+    },
+    {
+      "x": 132.7,
+      "y": -180.0,
+      "radius": 53.0,
+      "count": 6,
+      "common_from": "Ramp"
+    },
+    {
+      "x": 779.8,
+      "y": -2120.7,
+      "radius": 41.5,
+      "count": 4,
+      "common_from": "Outside"
+    },
+    {
+      "x": 347.8,
+      "y": -875.1,
+      "radius": 80.4,
+      "count": 3,
+      "common_from": "BombsiteA"
+    }
+  ],
+  "de_nuke|ct|smoke": [
+    {
+      "x": 195.5,
+      "y": -1267.8,
+      "radius": 145.8,
+      "count": 21,
+      "common_from": "BombsiteA"
+    },
+    {
+      "x": 139.9,
+      "y": -270.8,
+      "radius": 117.3,
+      "count": 12,
+      "common_from": "Ramp"
+    },
+    {
+      "x": 574.6,
+      "y": -1964.2,
+      "radius": 8.3,
+      "count": 4,
+      "common_from": "Outside"
+    }
+  ],
+  "de_nuke|t|molotov": [
+    {
+      "x": 1473.1,
+      "y": -2422.8,
+      "radius": 89.0,
+      "count": 3,
+      "common_from": "Outside"
+    },
+    {
+      "x": 1195.0,
+      "y": 24.1,
+      "radius": 54.3,
+      "count": 3,
+      "common_from": "Control"
+    },
+    {
+      "x": 675.1,
+      "y": -1498.6,
+      "radius": 43.3,
+      "count": 3,
+      "common_from": "Lobby"
+    }
+  ],
+  "de_nuke|t|smoke": [
+    {
+      "x": 1152.6,
+      "y": -2081.6,
+      "radius": 115.2,
+      "count": 10,
+      "common_from": "Outside"
+    },
+    {
+      "x": 980.4,
+      "y": -1857.9,
+      "radius": 34.2,
+      "count": 8,
+      "common_from": "Outside"
+    },
+    {
+      "x": 382.1,
+      "y": -1296.2,
+      "radius": 97.2,
+      "count": 7,
+      "common_from": "Lobby"
+    },
+    {
+      "x": 750.4,
+      "y": -1600.7,
+      "radius": 133.8,
+      "count": 6,
+      "common_from": "Outside"
+    }
+  ],
+  "de_overpass|ct|molotov": [
+    {
+      "x": -1208.1,
+      "y": -949.9,
+      "radius": 92.3,
+      "count": 12,
+      "common_from": "Walkway"
+    },
+    {
+      "x": -2198.8,
+      "y": -2549.2,
+      "radius": 50.3,
+      "count": 8,
+      "common_from": "LowerPark"
+    },
+    {
+      "x": -470.8,
+      "y": -300.4,
+      "radius": 119.1,
+      "count": 5,
+      "common_from": "BombsiteB"
+    },
+    {
+      "x": -1588.0,
+      "y": -393.0,
+      "radius": 3.8,
+      "count": 4,
+      "common_from": "Walkway"
+    },
+    {
+      "x": -2607.6,
+      "y": -200.9,
+      "radius": 88.2,
+      "count": 4,
+      "common_from": "BombsiteA"
+    }
+  ],
+  "de_overpass|ct|smoke": [
+    {
+      "x": -519.9,
+      "y": -676.1,
+      "radius": 199.2,
+      "count": 27,
+      "common_from": "BombsiteB"
+    },
+    {
+      "x": -2055.2,
+      "y": -2113.7,
+      "radius": 28.0,
+      "count": 7,
+      "common_from": "LowerPark"
+    },
+    {
+      "x": -2656.1,
+      "y": -183.4,
+      "radius": 62.3,
+      "count": 4,
+      "common_from": "BombsiteA"
+    }
+  ],
+  "de_overpass|t|molotov": [
+    {
+      "x": -949.0,
+      "y": -366.4,
+      "radius": 59.9,
+      "count": 13,
+      "common_from": "Alley"
+    },
+    {
+      "x": -1896.7,
+      "y": -1011.4,
+      "radius": 102.3,
+      "count": 5,
+      "common_from": "Tunnels"
+    },
+    {
+      "x": -1936.4,
+      "y": -1227.5,
+      "radius": 66.2,
+      "count": 5,
+      "common_from": "Connector"
+    },
+    {
+      "x": -2771.7,
+      "y": -1570.8,
+      "radius": 58.3,
+      "count": 4,
+      "common_from": "Tunnels"
+    },
+    {
+      "x": -2059.5,
+      "y": 588.2,
+      "radius": 57.9,
+      "count": 3,
+      "common_from": "UpperPark"
+    }
+  ],
+  "de_overpass|t|smoke": [
+    {
+      "x": -1233.6,
+      "y": -923.3,
+      "radius": 63.5,
+      "count": 9,
+      "common_from": "Canal"
+    },
+    {
+      "x": -1745.7,
+      "y": -845.4,
+      "radius": 178.6,
+      "count": 6,
+      "common_from": "Tunnels"
+    },
+    {
+      "x": -1243.0,
+      "y": 69.0,
+      "radius": 33.6,
+      "count": 5,
+      "common_from": "Canal"
+    },
+    {
+      "x": -1805.9,
+      "y": 555.5,
+      "radius": 64.1,
+      "count": 5,
+      "common_from": "Canal"
+    },
+    {
+      "x": -1932.5,
+      "y": 987.2,
+      "radius": 52.6,
+      "count": 4,
+      "common_from": "UpperPark"
+    },
+    {
+      "x": -2662.9,
+      "y": -869.4,
+      "radius": 27.9,
+      "count": 4,
+      "common_from": "Fountain"
+    },
+    {
+      "x": -956.3,
+      "y": -482.9,
+      "radius": 43.9,
+      "count": 3,
+      "common_from": "BombsiteB"
+    },
+    {
+      "x": -2478.0,
+      "y": 1118.0,
+      "radius": 40.5,
+      "count": 3,
+      "common_from": "UpperPark"
+    }
+  ]
+}
