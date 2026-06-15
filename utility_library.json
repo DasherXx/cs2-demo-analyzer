@@ -33,7 +33,7 @@
       "y": -32.8,
       "radius": 125.8,
       "count": 9,
-      "common_from": "BombsiteA"
+      "common_from": "Walkway"
     },
     {
       "x": -1809.0,
@@ -61,7 +61,7 @@
       "y": 305.9,
       "radius": 81.1,
       "count": 5,
-      "common_from": "Connector"
+      "common_from": "SnipersNest"
     },
     {
       "x": -71.6,
@@ -326,7 +326,7 @@
       "y": 173.6,
       "radius": 333.2,
       "count": 124,
-      "common_from": "Street"
+      "common_from": "Ruins"
     },
     {
       "x": 389.9,
@@ -496,7 +496,7 @@
       "y": 2384.1,
       "radius": 21.0,
       "count": 3,
-      "common_from": "BombsiteA"
+      "common_from": "ShortStairs"
     },
     {
       "x": 1106.6,
@@ -1017,7 +1017,7 @@
       "y": 601.0,
       "radius": 2.9,
       "count": 4,
-      "common_from": "BombsiteA"
+      "common_from": "CTSpawn"
     },
     {
       "x": 1173.4,
@@ -1147,7 +1147,7 @@
       "y": 898.7,
       "radius": 409.4,
       "count": 47,
-      "common_from": "BombsiteA"
+      "common_from": "Middle"
     },
     {
       "x": 452.3,
@@ -1240,14 +1240,14 @@
       "y": -2332.7,
       "radius": 72.2,
       "count": 5,
-      "common_from": "BombsiteA"
+      "common_from": "CTSpawn"
     },
     {
       "x": -714.8,
       "y": -1102.7,
       "radius": 160.4,
       "count": 4,
-      "common_from": "BombsiteA"
+      "common_from": "Jungle"
     },
     {
       "x": -2115.6,
@@ -1584,7 +1584,7 @@
       "y": 40.5,
       "radius": 75.9,
       "count": 3,
-      "common_from": "Decon"
+      "common_from": "BombsiteB"
     },
     {
       "x": -105.1,
@@ -1635,7 +1635,7 @@
       "y": -1623.1,
       "radius": 52.0,
       "count": 3,
-      "common_from": "Outside"
+      "common_from": "HutRoof"
     },
     {
       "x": 1063.5,
@@ -1649,7 +1649,7 @@
       "y": -722.6,
       "radius": 101.1,
       "count": 3,
-      "common_from": "Decon"
+      "common_from": "BombsiteA"
     }
   ],
   "de_nuke|t|molotov": [
@@ -1974,7 +1974,7 @@
       "y": -332.0,
       "radius": 122.4,
       "count": 6,
-      "common_from": "Alley"
+      "common_from": "BombsiteB"
     },
     {
       "x": -1277.9,

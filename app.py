@@ -198,6 +198,14 @@ def compute_findings(players: list, rounds: list, kills: list, grenades: list,
                     "from":        sm["from"],
                     "target_from": best["common_from"],
                     "off_by":      round(dist - accept),
+                    "from_x":      sm["from_x"],
+                    "from_y":      sm["from_y"],
+                    "from_z":      sm["from_z"],
+                    "land_x":      sm["land_x"],
+                    "land_y":      sm["land_y"],
+                    "land_z":      sm["land_z"],
+                    "target_x":    best["x"],
+                    "target_y":    best["y"],
                 })
             # else: za daleko od jakiegokolwiek spotu = improwizacja, pomijamy
 
@@ -403,8 +411,12 @@ def _do_parse(demo_id: str, dem_path: Path) -> None:
                         "thrower":  row.get("thrower_name"),
                         "side":     row.get("thrower_side"),
                         "from":     row.get("thrower_place"),
+                        "from_x":   round(tx, 1) if tx is not None else None,
+                        "from_y":   round(ty, 1) if ty is not None else None,
+                        "from_z":   round(row.get("thrower_Z"), 1) if row.get("thrower_Z") is not None else 0,
                         "land_x":   round(lx, 1) if lx is not None else None,
                         "land_y":   round(ly, 1) if ly is not None else None,
+                        "land_z":   round(row.get("Z"), 1) if row.get("Z") is not None else 0,
                         "distance": dist,
                     })
             return items
@@ -614,6 +626,51 @@ def debug_nades_auto():
         except Exception as e:
             out[attr] = f"blad: {e}"
     return out
+
+
+@app.get("/api/demos/{demo_id}/smoke-map")
+def smoke_map(demo_id: str, player: str, round: int):
+    """Renderuje radar mapy dla niecelnego smoke'a danego gracza w danej rundzie."""
+    meta = load_meta(demo_id)
+    report_file = STORAGE / (meta.get("report_file") or f"{demo_id}_report.json")
+    if not report_file.exists():
+        raise HTTPException(404, "Brak raportu — najpierw przeanalizuj demo")
+    report = json.loads(report_file.read_text(encoding="utf-8"))
+
+    findings = (report.get("player_findings") or {}).get(player, {})
+    offtarget = findings.get("smokes_offtarget", [])
+    smoke = next((o for o in offtarget if o.get("round") == round), None)
+    if not smoke:
+        raise HTTPException(404, "Nie znaleziono takiego niecelnego smoke'a")
+
+    out_png = STORAGE / f"{demo_id}_smoke_{player}_{round}.png"
+    if not out_png.exists():
+        import matplotlib
+        matplotlib.use("Agg")
+        from awpy.plot import plot
+
+        points = [
+            (smoke["from_x"], smoke["from_y"], smoke["from_z"]),       # skąd rzucił
+            (smoke["land_x"], smoke["land_y"], smoke["land_z"]),       # gdzie wylądował
+            (smoke["target_x"], smoke["target_y"], smoke["land_z"]),   # gdzie powinno (wzorzec)
+        ]
+        labels = ["skąd rzucił", "wylądował (źle)", "powinno tu"]
+        colors = ["#5b9dd9", "#e05c5c", "#3ecf8e"]
+        point_settings = [
+            {"color": c, "marker": "o", "label": l, "size": 10}
+            for c, l in zip(colors, labels)
+        ]
+        try:
+            fig, ax = plot(report["map"], points=points, point_settings=point_settings)
+        except Exception:
+            # awaryjnie bez kolorów, gdyby schemat point_settings był inny
+            fig, ax = plot(report["map"], points=points)
+        # NIE zmieniamy rozmiaru figury — to rozdmuchiwało markery. Tylko ostry zapis.
+        fig.savefig(out_png, dpi=150, bbox_inches="tight")
+        import matplotlib.pyplot as plt
+        plt.close(fig)
+
+    return FileResponse(out_png, media_type="image/png")
 
 
 @app.get("/", response_class=HTMLResponse)

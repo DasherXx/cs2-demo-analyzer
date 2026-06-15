@@ -109,6 +109,14 @@
   table.sb .arrow{color:var(--muted);font-size:16px}
   table.sb .prow:hover .arrow{color:var(--accent)}
   .sb-hint{font-size:12px;color:var(--muted);margin:0 2px 12px}
+  .half{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:12px}
+  .half-head{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;
+             background:var(--panel2);font-weight:600;font-size:13px}
+  .half-head .half-score{font-family:var(--mono);color:var(--text)}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;vertical-align:middle}
+  .dot.ct{background:#5b9dd9}.dot.t{background:#d9a441}
+  .smokemap-legend{font-size:12px;color:var(--muted);margin:10px 2px 6px}
+  .smokemap-img{width:100%;max-width:420px;border:1px solid var(--line);border-radius:10px;display:block}
   .scoreline{font-family:var(--mono);font-size:22px;font-weight:700;margin-bottom:14px;color:var(--text)}
   .section{margin-bottom:14px}
   .section h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px}
@@ -240,11 +248,40 @@ function renderPlayerSelection(demoId){
     </div>`;
   }
 
+  // Tabela jednej połowy — obie drużyny, statystyki tylko z tej połowy
+  function halfTable(label, score, half){
+    const teamRows = (members, cls) => members
+      .slice()
+      .sort((x,y)=> report.player_stats[y.name][half].k - report.player_stats[x.name][half].k)
+      .map(({name, idx})=>{
+        const h = report.player_stats[name][half];
+        return `<tr class="prow" onclick="showPlayer('${demoId}', ${idx})">
+          <td class="left nick"><span class="dot ${cls}"></span>${name}</td>
+          <td>${h.k}</td><td>${h.a}</td><td>${h.d}</td><td class="arrow">›</td>
+        </tr>`;
+      }).join('');
+    return `<div class="half">
+      <div class="half-head"><span>${label}</span><span class="half-score">${score}</span></div>
+      <table class="sb">
+        <tr><th class="left">Gracz</th><th>K</th><th>A</th><th>D</th><th></th></tr>
+        ${teamRows(ctTeam,'ct')}${teamRows(tTeam,'t')}
+      </table>
+    </div>`;
+  }
+
+  const h1 = teams.h1 || {a:'?', b:'?'};
+  const h2 = teams.h2 || {a:'?', b:'?'};
+
   container.innerHTML = `
     <h3>Scoreboard · ${report.map}</h3>
     <p class="sb-hint">Kliknij gracza, by zobaczyć jego pełną analizę.</p>
     ${teamBlock('ct', 'Drużyna A (start CT)', teams.ct_start_score ?? '?', ctTeam)}
-    ${teamBlock('t',  'Drużyna B (start T)',  teams.t_start_score ?? '?', tTeam)}`;
+    ${teamBlock('t',  'Drużyna B (start T)',  teams.t_start_score ?? '?', tTeam)}
+    <div class="section">
+      <h4>Rozbicie na połowy</h4>
+      ${halfTable('1. połowa', `A ${h1.a} : ${h1.b} B`, 'h1')}
+      ${halfTable('2. połowa', `A ${h2.a} : ${h2.b} B`, 'h2')}
+    </div>`;
 }
 
 function showPlayer(demoId, idx){
@@ -252,9 +289,22 @@ function showPlayer(demoId, idx){
   renderPlayerDetail(demoId, report._players[idx]);
 }
 
+function showSmokeMap(demoId, round, btn){
+  const { report } = getCtx(demoId);
+  const player = report._currentPlayer;
+  const box = document.getElementById('smokemap-' + demoId);
+  if (!box || !player) return;
+  btn.textContent = 'ładuję…'; btn.disabled = true;
+  const url = `/api/demos/${demoId}/smoke-map?player=${encodeURIComponent(player)}&round=${round}`;
+  box.innerHTML = `<img class="smokemap-img" src="${url}" alt="mapa rzutu" onload="this.dataset.ok=1">`;
+  box.scrollIntoView({behavior:'smooth', block:'nearest'});
+  btn.textContent = 'mapa'; btn.disabled = false;
+}
+
 // EKRAN 2 — pojedynczy gracz
 function renderPlayerDetail(demoId, name){
   const { report, container } = getCtx(demoId);
+  report._currentPlayer = name;   // zapamiętujemy, żeby nie wstrzykiwać nicku do HTML
   const s = report.player_stats[name] || {kills:0,deaths:0,hs:0,grenades:0};
   const kd = s.deaths ? (s.kills/s.deaths).toFixed(2) : s.kills.toFixed(2);
   const hsPct = s.kills ? Math.round(100*s.hs/s.kills) : 0;
@@ -368,7 +418,8 @@ function renderPlayerDetail(demoId, name){
         <td>${o.from||'—'}</td>
         <td>${o.target_from||'—'}</td>
         <td class="hs">${o.off_by}</td>
-      </tr>`).join('') || '<tr><td colspan="4" style="color:var(--good)">brak — wszystkie trafione 👌</td></tr>';
+        <td><button class="btn" onclick="showSmokeMap('${demoId}', ${o.round}, this)">mapa</button></td>
+      </tr>`).join('') || '<tr><td colspan="5" style="color:var(--good)">brak — wszystkie trafione 👌</td></tr>';
     smokeSection = `
     <div class="section">
       <div class="finding ${sev}">
@@ -380,9 +431,11 @@ function renderPlayerDetail(demoId, name){
       </div>
       ${offt.length ? `<h4>Smoke'i do poprawy</h4>
       <table>
-        <tr><th>Runda</th><th>Skąd rzucał</th><th>Cel (typowo z)</th><th>Poza o</th></tr>
+        <tr><th>Runda</th><th>Skąd rzucał</th><th>Cel (typowo z)</th><th>Poza o</th><th></th></tr>
         ${offRows}
-      </table>` : ''}
+      </table>
+      <div class="smokemap-legend">🔵 skąd rzucił · 🔴 wylądował (źle) · 🟢 powinno tu</div>
+      <div id="smokemap-${demoId}"></div>` : ''}
     </div>`;
   } else if ((f.smokes_total||0) > 0) {
     smokeSection = `
