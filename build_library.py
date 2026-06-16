@@ -181,7 +181,9 @@ def cluster_from_cache():
             mask = labels == lab
             cl = coords[mask]
             cx, cy = cl.mean(axis=0)
-            radius = float(np.sqrt(((cl - [cx, cy]) ** 2).sum(axis=1)).max())
+            dists = np.sqrt(((cl - [cx, cy]) ** 2).sum(axis=1))
+            radius = float(dists.max())          # zasięg (do najdalszego rzutu)
+            spread = float(np.median(dists))      # typowy rozrzut (odporny na outliery)
             members = [pts[j] for j in range(len(pts)) if mask[j]]
 
             # callout rzutu (z poprawionej pozycji rzutu)
@@ -200,6 +202,7 @@ def cluster_from_cache():
                 "x": round(float(cx), 1),
                 "y": round(float(cy), 1),
                 "radius": round(radius, 1),
+                "spread": round(spread, 1),
                 "count": int(mask.sum()),
                 "common_from": common_from,
                 "throw_x": throw_x,
@@ -207,10 +210,21 @@ def cluster_from_cache():
             })
 
         if spots:
-            spots.sort(key=lambda s: s["count"], reverse=True)
+            # Krytyczny smoke = pro trafiają go bardzo ciasno (mały spread = każda
+            # luka boli) i nie jest to marginalny, rzadki rzut.
+            #  spread = typowy rozrzut (mediana odległości od centroidu, odporny na outliery)
+            total = sum(s["count"] for s in spots)
+            for s in spots:
+                s["freq"] = round(s["count"] / total, 3) if total else 0
+                s["critical"] = bool(s["spread"] <= 50 and s["count"] >= 8)
+
+            spots.sort(key=lambda s: (s["critical"], s["count"]), reverse=True)
             library[key] = spots
             noise = int((labels == -1).sum())
-            print(f"{key}: {len(spots)} spotów z {len(pts)} rzutów ({noise} odstających)")
+            ncrit = sum(1 for s in spots if s["critical"])
+            spreads = sorted(s["spread"] for s in spots)
+            print(f"{key}: {len(spots)} spotów ({ncrit} kryt.) z {len(pts)} rzutów "
+                  f"| spread min/med/max = {spreads[0]:.0f}/{spreads[len(spreads)//2]:.0f}/{spreads[-1]:.0f}")
 
     LIBRARY_FILE.write_text(json.dumps(library, ensure_ascii=False, indent=2), encoding="utf-8")
     total_spots = sum(len(v) for v in library.values())

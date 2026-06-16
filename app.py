@@ -177,11 +177,13 @@ def compute_findings(players: list, rounds: list, kills: list, grenades: list,
 
         # REGUŁA 6 — celność wg biblioteki wzorcowej (z klasteryzacji dem pro)
         # Dla każdego smoke'a szukamy najbliższego kanonicznego spotu.
-        #  - w promieniu spotu          -> trafiony lineup
-        #  - blisko, ale poza promieniem -> "celowałeś tu, ale wyszło niecelnie"
+        #  - w strefie akceptacji        -> trafiony lineup
+        #  - blisko, ale poza            -> "celowałeś tu, ale wyszło niecelnie"
         #  - daleko od wszystkich        -> improwizacja (nie oceniamy)
-        MISS_MARGIN = 250     # ile poza strefą akceptacji liczymy jeszcze jako "near miss"
-        SMOKE_TOLERANCE = 130  # realny zasięg dymu — w tym promieniu od wzorca smoke spełnia rolę
+        # Spoty KRYTYCZNE (pro trafiają je bardzo ciasno) sądzimy surowiej —
+        # tolerancja zależy od ich realnego rozrzutu (spread), nie od stałej.
+        MISS_MARGIN = 250        # ile poza strefą akceptacji liczymy jeszcze jako "near miss"
+        SMOKE_TOLERANCE = 130    # zasięg dymu — dla zwykłych spotów smoke i tak spełnia rolę
         smokes_ontarget = 0
         smokes_offtarget = []
         for sm in [s for s in smokes if s["thrower"] == player and s["land_x"] is not None]:
@@ -190,7 +192,12 @@ def compute_findings(players: list, rounds: list, kills: list, grenades: list,
                 continue
             best = min(spots, key=lambda sp: (sp["x"] - sm["land_x"]) ** 2 + (sp["y"] - sm["land_y"]) ** 2)
             dist = ((best["x"] - sm["land_x"]) ** 2 + (best["y"] - sm["land_y"]) ** 2) ** 0.5
-            accept = best["radius"] + SMOKE_TOLERANCE   # strefa, w której smoke nadal spełnia rolę
+            is_critical = bool(best.get("critical"))
+            if is_critical:
+                # krytyczny: musi wpaść idealnie. Strefa = typowy rozrzut pro + mały margines.
+                accept = (best.get("spread") or 40) + 50
+            else:
+                accept = best["radius"] + SMOKE_TOLERANCE
             if dist <= accept:
                 smokes_ontarget += 1
             elif dist <= accept + MISS_MARGIN:
@@ -199,6 +206,7 @@ def compute_findings(players: list, rounds: list, kills: list, grenades: list,
                     "from":        sm["from"],
                     "target_from": best["common_from"],
                     "off_by":      round(dist - accept),
+                    "critical":    is_critical,
                     "from_x":      sm["from_x"],
                     "from_y":      sm["from_y"],
                     "from_z":      sm["from_z"],
@@ -207,6 +215,7 @@ def compute_findings(players: list, rounds: list, kills: list, grenades: list,
                     "land_z":      sm["land_z"],
                     "target_x":    best["x"],
                     "target_y":    best["y"],
+                    "target_critical": is_critical,
                     "traj":        sm.get("traj", []),
                 })
             # else: za daleko od jakiegokolwiek spotu = improwizacja, pomijamy
@@ -744,8 +753,13 @@ def smoke_map(demo_id: str, player: str, round: int):
 
         points.append((smoke["land_x"], smoke["land_y"], z))           # lądowanie
         settings.append({"color": "#e05c5c", "marker": "o", "size": 11})
-        points.append((smoke["target_x"], smoke["target_y"], z))       # cel wzorcowy
-        settings.append({"color": "#3ecf8e", "marker": "o", "size": 11})
+        # cel wzorcowy — krytyczny na czerwono i większy, zwykły na zielono
+        if smoke.get("target_critical"):
+            points.append((smoke["target_x"], smoke["target_y"], z))
+            settings.append({"color": "#ff3b3b", "marker": "o", "size": 15})
+        else:
+            points.append((smoke["target_x"], smoke["target_y"], z))
+            settings.append({"color": "#3ecf8e", "marker": "o", "size": 11})
 
         try:
             fig, ax = plot(report["map"], points=points, point_settings=settings)

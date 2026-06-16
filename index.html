@@ -117,6 +117,8 @@
   .dot.ct{background:#5b9dd9}.dot.t{background:#d9a441}
   .smokemap-legend{font-size:12px;color:var(--muted);margin:10px 2px 6px}
   .smokemap-img{width:100%;max-width:420px;border:1px solid var(--line);border-radius:10px;display:block}
+  .crit-badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;color:#ff5a5a;
+              border:1px solid #ff5a5a;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
   .scoreline{font-family:var(--mono);font-size:22px;font-weight:700;margin-bottom:14px;color:var(--text)}
   .section{margin-bottom:14px}
   .section h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px}
@@ -413,20 +415,22 @@ function renderPlayerDetail(demoId, name){
   if (f.has_library) {
     const checked = ont + offt.length;
     const sev = offt.length >= 4 ? 'bad' : (offt.length >= 1 ? 'warn' : 'ok');
+    const nCrit = offt.filter(o=>o.critical).length;
     const offRows = offt.map(o=>`<tr>
         <td>${o.round}</td>
         <td>${o.from||'—'}</td>
-        <td>${o.target_from||'—'}</td>
+        <td>${o.target_from||'—'}${o.critical ? ' <span class="crit-badge">KRYTYCZNY</span>' : ''}</td>
         <td class="hs">${o.off_by}</td>
         <td><button class="btn" onclick="showSmokeMap('${demoId}', ${o.round}, this)">mapa</button></td>
       </tr>`).join('') || '<tr><td colspan="5" style="color:var(--good)">brak — wszystkie trafione 👌</td></tr>';
+    const critTip = nCrit ? ` <b>${nCrit}</b> z nich to smoke'i krytyczne — takie, które pro kładą zawsze w to samo miejsce; tu nawet mały błąd zostawia lukę.` : '';
     smokeSection = `
     <div class="section">
       <div class="finding ${sev}">
         <div class="fval">${offt.length}</div>
         <div class="fbody">
           <div class="ftitle">Niecelne smoke'i (wg wzorców pro)</div>
-          <div class="ftip">Z ${checked} smoke'ów porównanych z bazą lineupów, ${ont} trafiło w standardowy spot, a ${offt.length} wylądowało obok — celowałeś w znany rzut, ale wyszło niecelnie. Te lineupy warto przećwiczyć.</div>
+          <div class="ftip">Z ${checked} smoke'ów porównanych z bazą lineupów, ${ont} trafiło w standardowy spot, a ${offt.length} wylądowało obok.${critTip} Te lineupy warto przećwiczyć.</div>
         </div>
       </div>
       ${offt.length ? `<h4>Smoke'i do poprawy</h4>
@@ -434,7 +438,7 @@ function renderPlayerDetail(demoId, name){
         <tr><th>Runda</th><th>Skąd rzucał</th><th>Cel (typowo z)</th><th>Poza o</th><th></th></tr>
         ${offRows}
       </table>
-      <div class="smokemap-legend">🔵 skąd rzucił · 🔴 wylądował (źle) · 🟢 powinno tu</div>
+      <div class="smokemap-legend">🔵 skąd rzucił · 🔴 wylądował (źle) · 🟢 powinno tu · <span style="color:#ff3b3b">🔴 cel krytyczny</span></div>
       <div id="smokemap-${demoId}"></div>` : ''}
     </div>`;
   } else if ((f.smokes_total||0) > 0) {
