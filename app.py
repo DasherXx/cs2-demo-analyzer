@@ -16,6 +16,7 @@ import json
 import uuid
 from pathlib import Path
 
+import polars as pl
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
@@ -206,6 +207,7 @@ def compute_findings(players: list, rounds: list, kills: list, grenades: list,
                     "land_z":      sm["land_z"],
                     "target_x":    best["x"],
                     "target_y":    best["y"],
+                    "traj":        sm.get("traj", []),
                 })
             # else: za daleko od jakiegokolwiek spotu = improwizacja, pomijamy
 
@@ -395,34 +397,114 @@ def _do_parse(demo_id: str, dem_path: Path) -> None:
             "h2": {"a": h2_t,  "b": h2_ct},
         }
 
-        # Smoke'i i mołotowy — osobne tabele awpy, JEDEN wiersz = jeden rzut,
-        # z pozycją lądowania (X,Y) i pozycją rzucającego (thrower_X/Y).
+        # Smoke'i i mołotowy. UWAGA: thrower_X/Y w tabeli smokes to pozycja gracza
+        # w momencie LĄDOWANIA dymu (start_tick), nie rzutu. Prawdziwą pozycję rzutu
+        # bierzemy z dem.ticks w pierwszym ticku granatu, a tor lotu z dem.grenades.
+
+        # 1) Indeks ticków granatów: (entity_id, round) -> posortowane [(tick,x,y,z), ...]
+        gren_df = getattr(dem, "grenades", None)
+        gren_by_ent: dict = {}
+        if gren_df is not None and len(gren_df) > 0:
+            for r in gren_df.to_dicts():
+                if r.get("X") is None or r.get("Y") is None:
+                    continue
+                key = (r.get("entity_id"), r.get("round_num"))
+                gren_by_ent.setdefault(key, []).append((r["tick"], r["X"], r["Y"], r.get("Z") or 0))
+            for k in gren_by_ent:
+                gren_by_ent[k].sort()
+
+        ticks_df = getattr(dem, "ticks", None)
+
+        # Bezpieczny dostęp do tabel utility — brak mołotowów w demie sprawia,
+        # że awpy rzuca przy dem.infernos; nie może to ubić parsowania smoke'ów.
+        def safe_table(attr):
+            try:
+                return getattr(dem, attr, None)
+            except Exception:
+                return None
+
+        # 2) Pozycja rzutu = gracz w dem.ticks przy pierwszym ticku granatu.
+        #    Zbieramy potrzebne pary (steamid, tick) i filtrujemy ticki raz.
+        def first_tick_of(row):
+            tk = gren_by_ent.get((row.get("entity_id"), row.get("round_num")))
+            return tk[0][0] if tk else None
+
+        throw_lut: dict = {}
+        if ticks_df is not None and len(ticks_df) > 0:
+            pairs = set()
+            for df in (safe_table("smokes"), safe_table("infernos")):
+                if df is None:
+                    continue
+                for row in df.to_dicts():
+                    ft = first_tick_of(row)
+                    if ft is not None:
+                        pairs.add((row.get("thrower_steamid"), ft))
+            if pairs:
+                steamids = list({p[0] for p in pairs})
+                tlist = list({p[1] for p in pairs})
+                sub = ticks_df.filter(
+                    pl.col("steamid").is_in(steamids) & pl.col("tick").is_in(tlist)
+                ).to_dicts()
+                for r in sub:
+                    throw_lut[(r["steamid"], r["tick"])] = (
+                        r.get("X"), r.get("Y"), r.get("Z"), r.get("place")
+                    )
+
         def parse_utility(df):
             items = []
-            if df is not None and len(df) > 0:
-                for row in df.to_dicts():
-                    tx, ty = row.get("thrower_X"), row.get("thrower_Y")
-                    lx, ly = row.get("X"), row.get("Y")
-                    dist = None
-                    if None not in (tx, ty, lx, ly):
-                        dist = round(((tx - lx) ** 2 + (ty - ly) ** 2) ** 0.5)
-                    items.append({
-                        "round":    row.get("round_num"),
-                        "thrower":  row.get("thrower_name"),
-                        "side":     row.get("thrower_side"),
-                        "from":     row.get("thrower_place"),
-                        "from_x":   round(tx, 1) if tx is not None else None,
-                        "from_y":   round(ty, 1) if ty is not None else None,
-                        "from_z":   round(row.get("thrower_Z"), 1) if row.get("thrower_Z") is not None else 0,
-                        "land_x":   round(lx, 1) if lx is not None else None,
-                        "land_y":   round(ly, 1) if ly is not None else None,
-                        "land_z":   round(row.get("Z"), 1) if row.get("Z") is not None else 0,
-                        "distance": dist,
-                    })
+            if df is None or len(df) == 0:
+                return items
+            for row in df.to_dicts():
+                eid, rnd = row.get("entity_id"), row.get("round_num")
+                start_tick = row.get("start_tick")
+                steam = row.get("thrower_steamid")
+                ticks = gren_by_ent.get((eid, rnd), [])
+
+                # prawdziwa pozycja + callout rzutu
+                fx = fy = fz = None
+                fplace = row.get("thrower_place")
+                if ticks:
+                    ftick = ticks[0][0]
+                    pos = throw_lut.get((steam, ftick))
+                    if pos and pos[0] is not None:
+                        fx, fy, fz, fplace = pos[0], pos[1], pos[2], pos[3] or fplace
+                    else:
+                        fx, fy, fz = ticks[0][1], ticks[0][2], ticks[0][3]
+
+                # tor lotu (ticki do momentu lądowania), próbkowany do ~40 punktów
+                flight = [(t, x, y) for (t, x, y, z) in ticks
+                          if start_tick is None or t < start_tick]
+                traj = []
+                if len(flight) >= 2:
+                    step = max(1, len(flight) // 40)
+                    traj = [[round(x, 1), round(y, 1)] for (t, x, y) in flight[::step]]
+                    lx_, ly_ = flight[-1][1], flight[-1][2]
+                    if traj[-1] != [round(lx_, 1), round(ly_, 1)]:
+                        traj.append([round(lx_, 1), round(ly_, 1)])
+
+                lx, ly = row.get("X"), row.get("Y")
+                dist = None
+                if None not in (fx, fy, lx, ly):
+                    dist = round(((fx - lx) ** 2 + (fy - ly) ** 2) ** 0.5)
+
+                items.append({
+                    "round":    rnd,
+                    "thrower":  row.get("thrower_name"),
+                    "side":     row.get("thrower_side"),
+                    "from":     fplace,
+                    "from_x":   round(fx, 1) if fx is not None else None,
+                    "from_y":   round(fy, 1) if fy is not None else None,
+                    "from_z":   round(fz, 1) if fz is not None else 0,
+                    "land_x":   round(lx, 1) if lx is not None else None,
+                    "land_y":   round(ly, 1) if ly is not None else None,
+                    "land_z":   round(row.get("Z"), 1) if row.get("Z") is not None else 0,
+                    "traj":     traj,
+                    "distance": dist,
+                })
             return items
 
-        smokes = parse_utility(getattr(dem, "smokes", None))
-        infernos = parse_utility(getattr(dem, "infernos", None))
+        smokes = parse_utility(safe_table("smokes"))
+        infernos = parse_utility(safe_table("infernos"))
 
         # Wczytujemy bibliotekę wzorcową (zbudowaną przez build_library.py).
         # Wczytujemy świeżo przy każdej analizie, więc podmiana biblioteki działa od razu.
@@ -649,23 +731,26 @@ def smoke_map(demo_id: str, player: str, round: int):
         matplotlib.use("Agg")
         from awpy.plot import plot
 
-        points = [
-            (smoke["from_x"], smoke["from_y"], smoke["from_z"]),       # skąd rzucił
-            (smoke["land_x"], smoke["land_y"], smoke["land_z"]),       # gdzie wylądował
-            (smoke["target_x"], smoke["target_y"], smoke["land_z"]),   # gdzie powinno (wzorzec)
-        ]
-        labels = ["skąd rzucił", "wylądował (źle)", "powinno tu"]
-        colors = ["#5b9dd9", "#e05c5c", "#3ecf8e"]
-        point_settings = [
-            {"color": c, "marker": "o", "label": l, "size": 10}
-            for c, l in zip(colors, labels)
-        ]
+        z = smoke.get("land_z", 0) or 0
+        traj = smoke.get("traj") or []
+
+        # Kolejność punktów: rzut, tor lotu (próbka), lądowanie, cel wzorcowy
+        points = [(smoke["from_x"], smoke["from_y"], smoke.get("from_z", 0) or 0)]
+        settings = [{"color": "#5b9dd9", "marker": "o", "size": 11}]   # rzut
+
+        for tx, ty in traj:
+            points.append((tx, ty, z))
+            settings.append({"color": "#f0c040", "marker": ".", "size": 4})  # tor
+
+        points.append((smoke["land_x"], smoke["land_y"], z))           # lądowanie
+        settings.append({"color": "#e05c5c", "marker": "o", "size": 11})
+        points.append((smoke["target_x"], smoke["target_y"], z))       # cel wzorcowy
+        settings.append({"color": "#3ecf8e", "marker": "o", "size": 11})
+
         try:
-            fig, ax = plot(report["map"], points=points, point_settings=point_settings)
+            fig, ax = plot(report["map"], points=points, point_settings=settings)
         except Exception:
-            # awaryjnie bez kolorów, gdyby schemat point_settings był inny
             fig, ax = plot(report["map"], points=points)
-        # NIE zmieniamy rozmiaru figury — to rozdmuchiwało markery. Tylko ostry zapis.
         fig.savefig(out_png, dpi=150, bbox_inches="tight")
         import matplotlib.pyplot as plt
         plt.close(fig)

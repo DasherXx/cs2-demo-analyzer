@@ -23,6 +23,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
+import polars as pl
 from awpy import Demo
 from sklearn.cluster import DBSCAN
 
@@ -82,9 +83,53 @@ def extract(folder: str, rebuild: bool = False):
                 dem = Demo(str(p))
                 dem.parse()
                 map_name = (dem.header or {}).get("map_name", "?")
+
+                # Indeks ticków granatów: (entity_id, round) -> najwcześniejszy tick
+                gren_first = {}
+                gdf = getattr(dem, "grenades", None)
+                if gdf is not None and len(gdf) > 0:
+                    for r in gdf.to_dicts():
+                        if r.get("X") is None:
+                            continue
+                        key = (r.get("entity_id"), r.get("round_num"))
+                        t = r["tick"]
+                        if key not in gren_first or t < gren_first[key]:
+                            gren_first[key] = t
+
+                # Bezpieczny dostęp: brak mołotowów = awpy rzuca przy dem.infernos.
+                # Nie może to ubić całego dema (smoke'i wtedy też przepadają).
+                def safe_table(attr):
+                    try:
+                        return getattr(dem, attr, None)
+                    except Exception:
+                        return None
+
+                # Pozycja rzutu = gracz w dem.ticks przy pierwszym ticku granatu.
+                tdf = getattr(dem, "ticks", None)
+                throw_lut = {}
+                if tdf is not None and len(tdf) > 0:
+                    pairs = set()
+                    for attr in UTILITY_TABLES.values():
+                        df = safe_table(attr)
+                        if df is None:
+                            continue
+                        for row in df.to_dicts():
+                            ft = gren_first.get((row.get("entity_id"), row.get("round_num")))
+                            if ft is not None:
+                                pairs.add((row.get("thrower_steamid"), ft))
+                    if pairs:
+                        sub = tdf.filter(
+                            pl.col("steamid").is_in(list({a for a, _ in pairs})) &
+                            pl.col("tick").is_in(list({b for _, b in pairs}))
+                        ).to_dicts()
+                        for r in sub:
+                            throw_lut[(r["steamid"], r["tick"])] = (
+                                r.get("X"), r.get("Y"), r.get("place")
+                            )
+
                 total = 0
                 for utype, attr in UTILITY_TABLES.items():
-                    df = getattr(dem, attr, None)
+                    df = safe_table(attr)
                     if df is None or len(df) == 0:
                         continue
                     for row in df.to_dicts():
@@ -92,8 +137,15 @@ def extract(folder: str, rebuild: bool = False):
                         if x is None or y is None:
                             continue
                         side = row.get("thrower_side") or "?"
+                        # prawdziwa pozycja + callout rzutu (nie z momentu lądowania!)
+                        tx = ty = None
+                        tplace = row.get("thrower_place")
+                        ft = gren_first.get((row.get("entity_id"), row.get("round_num")))
+                        pos = throw_lut.get((row.get("thrower_steamid"), ft)) if ft else None
+                        if pos and pos[0] is not None:
+                            tx, ty, tplace = round(pos[0], 1), round(pos[1], 1), pos[2] or tplace
                         by_key[f"{map_name}|{side}|{utype}"].append(
-                            [round(x, 1), round(y, 1), row.get("thrower_place")]
+                            [round(x, 1), round(y, 1), tx, ty, tplace]
                         )
                         total += 1
                 processed.append(p.name)
@@ -130,14 +182,28 @@ def cluster_from_cache():
             cl = coords[mask]
             cx, cy = cl.mean(axis=0)
             radius = float(np.sqrt(((cl - [cx, cy]) ** 2).sum(axis=1)).max())
-            places = [pts[j][2] for j in range(len(pts)) if mask[j] and pts[j][2]]
+            members = [pts[j] for j in range(len(pts)) if mask[j]]
+
+            # callout rzutu (z poprawionej pozycji rzutu)
+            places = [m[4] for m in members if len(m) > 4 and m[4]]
             common_from = max(set(places), key=places.count) if places else None
+
+            # wzorcowa pozycja rzutu = średnia pozycji rzutów w tym skupisku
+            throws = [(m[2], m[3]) for m in members
+                      if len(m) > 3 and m[2] is not None and m[3] is not None]
+            throw_x = throw_y = None
+            if throws:
+                throw_x = round(sum(t[0] for t in throws) / len(throws), 1)
+                throw_y = round(sum(t[1] for t in throws) / len(throws), 1)
+
             spots.append({
                 "x": round(float(cx), 1),
                 "y": round(float(cy), 1),
                 "radius": round(radius, 1),
                 "count": int(mask.sum()),
                 "common_from": common_from,
+                "throw_x": throw_x,
+                "throw_y": throw_y,
             })
 
         if spots:
