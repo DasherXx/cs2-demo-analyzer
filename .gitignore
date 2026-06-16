@@ -4,3 +4,6 @@ __pycache__/
 demos/
 landings_cache.json
 landings_cache.json
+test_*.png
+test_traj_debug.py
+test_throw_tick.py
