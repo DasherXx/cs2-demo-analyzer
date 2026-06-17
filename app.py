@@ -299,9 +299,13 @@ def _do_parse(demo_id: str, dem_path: Path) -> None:
                     "victim_place":  row.get("victim_place"),
                     "weapon":        row.get("weapon"),
                     "headshot":      row.get("headshot"),
+                    "hitgroup":      row.get("hitgroup"),
+                    "distance":      row.get("distance"),
                     "assistedby":    row.get("assister_name"),
                     "thrusmoke":     row.get("thrusmoke", False),
                     "blind":         row.get("attackerblind", False),
+                    "noscope":       row.get("noscope", False),
+                    "wallbang":      bool(row.get("penetrated")),
                 })
 
         # Granaty — każdy rzut istnieje jako kilka obiektów (projektil + efekt),
@@ -359,7 +363,24 @@ def _do_parse(demo_id: str, dem_path: Path) -> None:
         # 3) statystyki per gracz, z rozbiciem na połowy
         def _new_stat():
             return {"kills": 0, "deaths": 0, "hs": 0, "assists": 0, "grenades": 0,
-                    "h1": {"k": 0, "a": 0, "d": 0}, "h2": {"k": 0, "a": 0, "d": 0}}
+                    "h1": {"k": 0, "a": 0, "d": 0}, "h2": {"k": 0, "a": 0, "d": 0},
+                    # profil aimu (z hitgroup zabójstw)
+                    "hits": {"head": 0, "chest": 0, "stomach": 0, "arms": 0, "legs": 0, "other": 0},
+                    "special": {"smoke": 0, "noscope": 0, "wallbang": 0, "blind": 0},
+                    "dist_sum": 0.0, "dist_n": 0}
+
+        def hit_bucket(hg):
+            if hg == "head":
+                return "head"
+            if hg == "chest":
+                return "chest"
+            if hg == "stomach":
+                return "stomach"
+            if hg in ("left_arm", "right_arm"):
+                return "arms"
+            if hg in ("left_leg", "right_leg"):
+                return "legs"
+            return "other"
 
         player_stats: dict[str, dict] = {}
         for k in kills:
@@ -371,6 +392,19 @@ def _do_parse(demo_id: str, dem_path: Path) -> None:
                 s[h]["k"] += 1
                 if k["headshot"]:
                     s["hs"] += 1
+                # profil aimu — gdzie trafił, warunki, dystans
+                s["hits"][hit_bucket(k.get("hitgroup"))] += 1
+                if k.get("thrusmoke"):
+                    s["special"]["smoke"] += 1
+                if k.get("noscope"):
+                    s["special"]["noscope"] += 1
+                if k.get("wallbang"):
+                    s["special"]["wallbang"] += 1
+                if k.get("blind"):
+                    s["special"]["blind"] += 1
+                if k.get("distance") is not None:
+                    s["dist_sum"] += k["distance"]
+                    s["dist_n"] += 1
             if v:
                 s = player_stats.setdefault(v, _new_stat())
                 s["deaths"] += 1

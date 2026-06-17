@@ -119,6 +119,12 @@
   .smokemap-img{width:100%;max-width:420px;border:1px solid var(--line);border-radius:10px;display:block}
   .crit-badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;color:#ff5a5a;
               border:1px solid #ff5a5a;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+  .hitrow{display:flex;align-items:center;gap:10px;margin:6px 0}
+  .hitlabel{width:60px;font-size:13px;color:var(--muted)}
+  .hitbar{flex:1;height:14px;background:var(--panel2);border-radius:7px;overflow:hidden}
+  .hitbar span{display:block;height:100%;border-radius:7px}
+  .hitval{width:84px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--text)}
+  .aimnote{font-size:13px;color:var(--muted);margin:10px 2px 0}
   .scoreline{font-family:var(--mono);font-size:22px;font-weight:700;margin-bottom:14px;color:var(--text)}
   .section{margin-bottom:14px}
   .section h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px}
@@ -454,6 +460,40 @@ function renderPlayerDetail(demoId, name){
     </div>`;
   }
 
+  // Profil celowania — rozkład trafień + specjalne killie
+  const hits = s.hits || {head:0,chest:0,stomach:0,arms:0,legs:0,other:0};
+  const totalHits = hits.head+hits.chest+hits.stomach+hits.arms+hits.legs+hits.other;
+  const sp = s.special || {smoke:0,noscope:0,wallbang:0,blind:0};
+  let aimSection = '';
+  if (totalHits > 0) {
+    const pct = n => Math.round(100*n/totalHits);
+    const bar = (label, n, color) => `
+      <div class="hitrow">
+        <span class="hitlabel">${label}</span>
+        <span class="hitbar"><span style="width:${pct(n)}%;background:${color}"></span></span>
+        <span class="hitval">${n} · ${pct(n)}%</span>
+      </div>`;
+    const specials = [];
+    if (sp.smoke) specials.push(`${sp.smoke}× przez dym`);
+    if (sp.wallbang) specials.push(`${sp.wallbang}× przez ścianę`);
+    if (sp.noscope) specials.push(`${sp.noscope}× noscope`);
+    if (sp.blind) specials.push(`${sp.blind}× oślepiony`);
+    const headNote = pct(hits.head) >= 45
+      ? 'Wysoki udział strzałów w głowę — dobre ustawienie celownika.'
+      : (pct(hits.head) < 30 ? 'Mało trafień w głowę — celownik trzymaj wyżej, na poziomie głowy.' : '');
+    aimSection = `
+    <div class="section">
+      <h4>Profil celowania (gdzie trafiasz)</h4>
+      ${bar('Głowa', hits.head, '#3ecf8e')}
+      ${bar('Tors', hits.chest, '#5b9dd9')}
+      ${bar('Brzuch', hits.stomach, '#9b8cff')}
+      ${bar('Ręce', hits.arms, '#e0a13e')}
+      ${bar('Nogi', hits.legs, '#e05c5c')}
+      ${headNote ? `<p class="aimnote">${headNote}</p>` : ''}
+      ${specials.length ? `<p class="aimnote">Wyróżniające killie: ${specials.join(' · ')}</p>` : ''}
+    </div>`;
+  }
+
   container.innerHTML = `
     <button class="btn back" onclick="renderPlayerSelection('${demoId}')">← wszyscy gracze</button>
     <h3>${name} · ${report.map}</h3>
@@ -465,6 +505,7 @@ function renderPlayerDetail(demoId, name){
       <div class="statbox"><div class="v">${s.grenades}</div><div class="l">Granaty</div></div>
     </div>
     ${findingsSection}
+    ${aimSection}
     ${smokeSection}
     ${spotsSection}
     ${ctxSection}
