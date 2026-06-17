@@ -19,7 +19,7 @@ Użycie:
 
 import json
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -33,42 +33,139 @@ MIN_SAMPLES = 3    # ile rzutów w miejsce, by uznać je za standardowy spot
 
 CACHE_FILE = Path("landings_cache.json")
 LIBRARY_FILE = Path("utility_library.json")
+PLAYS_FILE = Path("plays_library.json")
 
 UTILITY_TABLES = {"smoke": "smokes", "molotov": "infernos"}
 
 
 def _load_cache():
-    """Zwraca (lista_przetworzonych_dem | None, dane). None = stary płaski format."""
+    """Zwraca (przetworzone | None, dane_utility, zagrania). None = stary format."""
     if not CACHE_FILE.exists():
-        return [], defaultdict(list)
+        return [], defaultdict(list), []
     raw = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
     if isinstance(raw, dict) and "data" in raw and "_processed" in raw:
-        return list(raw["_processed"]), defaultdict(list, raw["data"])
-    return None, defaultdict(list, raw)   # stary format -> wymaga migracji
+        return list(raw["_processed"]), defaultdict(list, raw["data"]), list(raw.get("plays", []))
+    return None, defaultdict(list, raw), []   # stary format -> migracja
 
 
-def _save_cache(processed, data):
+def _save_cache(processed, data, plays):
     CACHE_FILE.write_text(
-        json.dumps({"_processed": sorted(processed), "data": data}, ensure_ascii=False),
+        json.dumps({"_processed": sorted(processed), "data": data, "plays": plays},
+                   ensure_ascii=False),
         encoding="utf-8",
     )
 
 
-def extract(folder: str, rebuild: bool = False):
-    """Parsuje nowe dema i dokłada ich lądowania do cache'u."""
+def _parse_one_demo(path_str: str) -> dict:
+    """Parsuje JEDNO demo i zwraca lądowania utility + zagrania flash+kill.
+    Funkcja na poziomie modułu — może działać w osobnym procesie (pula)."""
+    from pathlib import Path
+    name = Path(path_str).name
+    try:
+        dem = Demo(path_str)
+        dem.parse()
+        map_name = (dem.header or {}).get("map_name", "?")
+
+        def safe_table(attr):
+            try:
+                return getattr(dem, attr, None)
+            except Exception:
+                return None
+
+        # najwcześniejszy tick każdego granatu
+        gren_first = {}
+        gdf = safe_table("grenades")
+        if gdf is not None and len(gdf) > 0:
+            for r in gdf.to_dicts():
+                if r.get("X") is None:
+                    continue
+                key = (r.get("entity_id"), r.get("round_num"))
+                t = r["tick"]
+                if key not in gren_first or t < gren_first[key]:
+                    gren_first[key] = t
+
+        # pozycja rzutu z dem.ticks
+        tdf = safe_table("ticks")
+        throw_lut = {}
+        if tdf is not None and len(tdf) > 0:
+            pairs = set()
+            for attr in UTILITY_TABLES.values():
+                df = safe_table(attr)
+                if df is None:
+                    continue
+                for row in df.to_dicts():
+                    ft = gren_first.get((row.get("entity_id"), row.get("round_num")))
+                    if ft is not None:
+                        pairs.add((row.get("thrower_steamid"), ft))
+            if pairs:
+                sub = tdf.filter(
+                    pl.col("steamid").is_in(list({a for a, _ in pairs})) &
+                    pl.col("tick").is_in(list({b for _, b in pairs}))
+                ).to_dicts()
+                for r in sub:
+                    throw_lut[(r["steamid"], r["tick"])] = (r.get("X"), r.get("Y"), r.get("place"))
+
+        items = {}
+        total = 0
+        for utype, attr in UTILITY_TABLES.items():
+            df = safe_table(attr)
+            if df is None or len(df) == 0:
+                continue
+            for row in df.to_dicts():
+                x, y = row.get("X"), row.get("Y")
+                if x is None or y is None:
+                    continue
+                side = row.get("thrower_side") or "?"
+                tx = ty = None
+                tplace = row.get("thrower_place")
+                ft = gren_first.get((row.get("entity_id"), row.get("round_num")))
+                pos = throw_lut.get((row.get("thrower_steamid"), ft)) if ft else None
+                if pos and pos[0] is not None:
+                    tx, ty, tplace = round(pos[0], 1), round(pos[1], 1), pos[2] or tplace
+                items.setdefault(f"{map_name}|{side}|{utype}", []).append(
+                    [round(x, 1), round(y, 1), tx, ty, tplace]
+                )
+                total += 1
+
+        plays = []
+        kdf = safe_table("kills")
+        if kdf is not None and len(kdf) > 0:
+            for kr in kdf.to_dicts():
+                if not kr.get("assistedflash"):
+                    continue
+                plays.append({
+                    "map":          map_name,
+                    "victim_place": kr.get("victim_place"),
+                    "victim_side":  kr.get("victim_side"),
+                    "flash_from":   kr.get("assister_place"),
+                    "killer_from":  kr.get("attacker_place"),
+                })
+
+        return {"file": name, "map": map_name, "items": items,
+                "plays": plays, "total": total, "error": None}
+    except Exception as e:
+        return {"file": name, "map": None, "items": {},
+                "plays": [], "total": 0, "error": str(e)}
+
+
+def extract(folder: str, rebuild: bool = False, workers: int = 3):
+    """Parsuje nowe dema RÓWNOLEGLE i dokłada wyniki do cache'u.
+    workers = ile dem parsować naraz (domyślnie 3 — łagodnie dla pracy w tle)."""
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+
     dems = sorted(Path(folder).glob("*.dem"))
     if not dems:
         print(f"Brak plików .dem w folderze '{folder}'")
         return
 
     if rebuild:
-        processed, by_key = [], defaultdict(list)
-        print("Tryb --rebuild: parsuję wszystkie dema od nowa.\n")
+        processed, by_key, plays = [], defaultdict(list), []
+        print("Tryb --rebuild: parsuję wszystkie dema od nowa.")
     else:
-        processed, by_key = _load_cache()
+        processed, by_key, plays = _load_cache()
         if processed is None:
-            # stary płaski cache -> zakładamy, że powstał z obecnego folderu
             processed = [p.name for p in dems]
+            plays = []
             print(f"Wykryto stary cache — uznaję obecne {len(processed)} dem za już przetworzone.")
 
     done = set(processed)
@@ -77,86 +174,32 @@ def extract(folder: str, rebuild: bool = False):
     if not todo:
         print(f"Wszystkie {len(dems)} dem już sparsowane — nic nowego.")
     else:
-        print(f"{len(dems)} dem w folderze, {len(todo)} nowych do sparsowania\n")
-        for i, p in enumerate(todo, 1):
-            try:
-                dem = Demo(str(p))
-                dem.parse()
-                map_name = (dem.header or {}).get("map_name", "?")
+        workers = max(1, workers)
+        print(f"{len(dems)} dem w folderze, {len(todo)} nowych — parsuję {workers} naraz\n")
+        finished = 0
+        with ProcessPoolExecutor(max_workers=workers) as ex:
+            futures = {ex.submit(_parse_one_demo, str(p)): p for p in todo}
+            for fut in as_completed(futures):
+                res = fut.result()
+                finished += 1
+                if res["error"]:
+                    print(f"[{finished}/{len(todo)}] {res['file']}: BŁĄD — {res['error']}")
+                    continue
+                for key, lst in res["items"].items():
+                    by_key[key].extend(lst)
+                plays.extend(res["plays"])
+                processed.append(res["file"])
+                print(f"[{finished}/{len(todo)}] {res['file']}: {res['map']}, "
+                      f"{res['total']} rzutów (smoke+molo)")
+                # zapis przyrostowy co 5 dem — przerwanie nie traci całej roboty
+                if finished % 5 == 0:
+                    _save_cache(processed, dict(by_key), plays)
 
-                # Indeks ticków granatów: (entity_id, round) -> najwcześniejszy tick
-                gren_first = {}
-                gdf = getattr(dem, "grenades", None)
-                if gdf is not None and len(gdf) > 0:
-                    for r in gdf.to_dicts():
-                        if r.get("X") is None:
-                            continue
-                        key = (r.get("entity_id"), r.get("round_num"))
-                        t = r["tick"]
-                        if key not in gren_first or t < gren_first[key]:
-                            gren_first[key] = t
-
-                # Bezpieczny dostęp: brak mołotowów = awpy rzuca przy dem.infernos.
-                # Nie może to ubić całego dema (smoke'i wtedy też przepadają).
-                def safe_table(attr):
-                    try:
-                        return getattr(dem, attr, None)
-                    except Exception:
-                        return None
-
-                # Pozycja rzutu = gracz w dem.ticks przy pierwszym ticku granatu.
-                tdf = getattr(dem, "ticks", None)
-                throw_lut = {}
-                if tdf is not None and len(tdf) > 0:
-                    pairs = set()
-                    for attr in UTILITY_TABLES.values():
-                        df = safe_table(attr)
-                        if df is None:
-                            continue
-                        for row in df.to_dicts():
-                            ft = gren_first.get((row.get("entity_id"), row.get("round_num")))
-                            if ft is not None:
-                                pairs.add((row.get("thrower_steamid"), ft))
-                    if pairs:
-                        sub = tdf.filter(
-                            pl.col("steamid").is_in(list({a for a, _ in pairs})) &
-                            pl.col("tick").is_in(list({b for _, b in pairs}))
-                        ).to_dicts()
-                        for r in sub:
-                            throw_lut[(r["steamid"], r["tick"])] = (
-                                r.get("X"), r.get("Y"), r.get("place")
-                            )
-
-                total = 0
-                for utype, attr in UTILITY_TABLES.items():
-                    df = safe_table(attr)
-                    if df is None or len(df) == 0:
-                        continue
-                    for row in df.to_dicts():
-                        x, y = row.get("X"), row.get("Y")
-                        if x is None or y is None:
-                            continue
-                        side = row.get("thrower_side") or "?"
-                        # prawdziwa pozycja + callout rzutu (nie z momentu lądowania!)
-                        tx = ty = None
-                        tplace = row.get("thrower_place")
-                        ft = gren_first.get((row.get("entity_id"), row.get("round_num")))
-                        pos = throw_lut.get((row.get("thrower_steamid"), ft)) if ft else None
-                        if pos and pos[0] is not None:
-                            tx, ty, tplace = round(pos[0], 1), round(pos[1], 1), pos[2] or tplace
-                        by_key[f"{map_name}|{side}|{utype}"].append(
-                            [round(x, 1), round(y, 1), tx, ty, tplace]
-                        )
-                        total += 1
-                processed.append(p.name)
-                print(f"[{i}/{len(todo)}] {p.name}: {map_name}, {total} rzutów (smoke+molo)")
-            except Exception as e:
-                print(f"[{i}/{len(todo)}] {p.name}: BŁĄD — {e}")
-
-    _save_cache(processed, dict(by_key))
+    _save_cache(processed, dict(by_key), plays)
     total_pts = sum(len(v) for v in by_key.values())
-    print(f"\nCache: {len(processed)} dem, {total_pts} rzutów łącznie")
-    print("Teraz uruchom:  python build_library.py cluster")
+    print(f"\nCache: {len(processed)} dem, {total_pts} rzutów utility, {len(plays)} zagrań flash+kill")
+    print("Teraz uruchom:  python build_library.py cluster   (smoke'i)")
+    print("           oraz: python build_library.py plays     (zagrania)")
 
 
 def cluster_from_cache():
@@ -165,7 +208,7 @@ def cluster_from_cache():
         print(f"Brak {CACHE_FILE}. Najpierw: python build_library.py extract demos")
         return
 
-    _, cache = _load_cache()
+    _, cache, _ = _load_cache()
     library = {}
     print(f"Klasteryzacja (EPS={EPS}, MIN_SAMPLES={MIN_SAMPLES})\n")
     for key, pts in sorted(cache.items()):
@@ -231,16 +274,76 @@ def cluster_from_cache():
     print(f"\nZapisano {LIBRARY_FILE} — {total_spots} spotów łącznie")
 
 
+def build_plays():
+    """Agreguje zagrania flash+kill z cache'u w bibliotekę per miejsce.
+
+    Klucz: mapa|miejsce_smierci|strona_ofiary. Wynik: jak często pro zdobywają
+    tam killa z flasha i skąd ten flash najczęściej leci.
+    """
+    if not CACHE_FILE.exists():
+        print(f"Brak {CACHE_FILE}. Najpierw: python build_library.py extract demos")
+        return
+    _, _, plays = _load_cache()
+    if not plays:
+        print("Brak zagrań flash+kill w cache. Zrób extract --rebuild nową wersją skryptu.")
+        return
+
+    MIN_PLAYS = 4   # min. liczba flash-killi w miejscu, by uznać za wzorzec
+    agg = {}
+    for pl_ in plays:
+        place = pl_.get("victim_place")
+        if not place:
+            continue
+        key = f"{pl_.get('map')}|{place}|{pl_.get('victim_side')}"
+        a = agg.setdefault(key, {"flash_kills": 0,
+                                 "flash_from": Counter(), "killer_from": Counter()})
+        a["flash_kills"] += 1
+        if pl_.get("flash_from"):
+            a["flash_from"][pl_["flash_from"]] += 1
+        if pl_.get("killer_from"):
+            a["killer_from"][pl_["killer_from"]] += 1
+
+    library = {}
+    for key, a in agg.items():
+        if a["flash_kills"] < MIN_PLAYS:
+            continue
+        library[key] = {
+            "flash_kills": a["flash_kills"],
+            "flash_from":  a["flash_from"].most_common(3),
+            "killer_from": a["killer_from"].most_common(3),
+        }
+
+    PLAYS_FILE.write_text(json.dumps(library, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"Zapisano {PLAYS_FILE} — {len(library)} miejsc-zagrań (min {MIN_PLAYS} flash-killi)\n")
+    for key, v in sorted(library.items(), key=lambda x: -x[1]["flash_kills"])[:15]:
+        ff = v["flash_from"][0] if v["flash_from"] else ("?", 0)
+        print(f"  {key}: {v['flash_kills']} flash-killi | flash zwykle z {ff[0]}")
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "extract":
         args = [a for a in sys.argv[2:] if not a.startswith("--")]
         folder = args[0] if args else "demos"
-        extract(folder, rebuild="--rebuild" in sys.argv)
+        workers = 3
+        for a in sys.argv[2:]:
+            if a.startswith("--workers"):
+                # forma --workers=N albo --workers N
+                if "=" in a:
+                    workers = int(a.split("=")[1])
+                else:
+                    idx = sys.argv.index(a)
+                    if idx + 1 < len(sys.argv):
+                        workers = int(sys.argv[idx + 1])
+        extract(folder, rebuild="--rebuild" in sys.argv, workers=workers)
     elif cmd == "cluster":
         cluster_from_cache()
+    elif cmd == "plays":
+        build_plays()
     else:
         print("Użycie:")
-        print("  python build_library.py extract demos            # parsuj tylko nowe dema")
-        print("  python build_library.py extract demos --rebuild  # od nowa wszystko")
-        print("  python build_library.py cluster                  # zbuduj bibliotekę")
+        print("  python build_library.py extract demos                 # parsuj nowe dema (3 naraz)")
+        print("  python build_library.py extract demos --workers 6     # szybciej (gdy laptop wolny)")
+        print("  python build_library.py extract demos --rebuild       # od nowa wszystko")
+        print("  python build_library.py cluster                       # biblioteka smoke'ów")
+        print("  python build_library.py plays                         # biblioteka zagrań flash+kill")

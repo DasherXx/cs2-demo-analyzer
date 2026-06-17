@@ -1,0 +1,1013 @@
+{
+  "de_nuke|Ramp|ct": {
+    "flash_kills": 5,
+    "flash_from": [
+      [
+        "Control",
+        4
+      ],
+      [
+        "Ramp",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "Ramp",
+        4
+      ],
+      [
+        "Control",
+        1
+      ]
+    ]
+  },
+  "de_nuke|BombsiteA|ct": {
+    "flash_kills": 16,
+    "flash_from": [
+      [
+        "Lobby",
+        6
+      ],
+      [
+        "Hut",
+        3
+      ],
+      [
+        "Roof",
+        3
+      ]
+    ],
+    "killer_from": [
+      [
+        "BombsiteA",
+        8
+      ],
+      [
+        "Hut",
+        4
+      ],
+      [
+        "Mini",
+        3
+      ]
+    ]
+  },
+  "de_dust2|LongDoors|t": {
+    "flash_kills": 13,
+    "flash_from": [
+      [
+        "LongA",
+        11
+      ],
+      [
+        "UnderA",
+        2
+      ]
+    ],
+    "killer_from": [
+      [
+        "LongA",
+        8
+      ],
+      [
+        "Pit",
+        3
+      ],
+      [
+        "LongDoors",
+        2
+      ]
+    ]
+  },
+  "de_dust2|LongA|ct": {
+    "flash_kills": 11,
+    "flash_from": [
+      [
+        "ShortStairs",
+        4
+      ],
+      [
+        "ExtendedA",
+        2
+      ],
+      [
+        "LongDoors",
+        2
+      ]
+    ],
+    "killer_from": [
+      [
+        "ExtendedA",
+        3
+      ],
+      [
+        "ARamp",
+        2
+      ],
+      [
+        "UnderA",
+        2
+      ]
+    ]
+  },
+  "de_dust2|LongA|t": {
+    "flash_kills": 6,
+    "flash_from": [
+      [
+        "ExtendedA",
+        4
+      ],
+      [
+        "BombsiteA",
+        2
+      ]
+    ],
+    "killer_from": [
+      [
+        "UnderA",
+        3
+      ],
+      [
+        "LongA",
+        3
+      ]
+    ]
+  },
+  "de_dust2|UpperTunnel|t": {
+    "flash_kills": 5,
+    "flash_from": [
+      [
+        "BombsiteB",
+        4
+      ],
+      [
+        "MidDoors",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "BombsiteB",
+        3
+      ],
+      [
+        "UpperTunnel",
+        2
+      ]
+    ]
+  },
+  "de_mirage|TRamp|t": {
+    "flash_kills": 5,
+    "flash_from": [
+      [
+        "BombsiteA",
+        4
+      ],
+      [
+        "Stairs",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "BombsiteA",
+        3
+      ],
+      [
+        "PalaceInterior",
+        2
+      ]
+    ]
+  },
+  "de_mirage|BombsiteA|ct": {
+    "flash_kills": 11,
+    "flash_from": [
+      [
+        "TRamp",
+        3
+      ],
+      [
+        "PalaceAlley",
+        3
+      ],
+      [
+        "BombsiteA",
+        2
+      ]
+    ],
+    "killer_from": [
+      [
+        "BombsiteA",
+        7
+      ],
+      [
+        "PalaceInterior",
+        3
+      ],
+      [
+        "Connector",
+        1
+      ]
+    ]
+  },
+  "de_mirage|TopofMid|t": {
+    "flash_kills": 6,
+    "flash_from": [
+      [
+        "BombsiteA",
+        3
+      ],
+      [
+        "Underpass",
+        1
+      ],
+      [
+        "Catwalk",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "Catwalk",
+        2
+      ],
+      [
+        "SnipersNest",
+        1
+      ],
+      [
+        "Connector",
+        1
+      ]
+    ]
+  },
+  "de_mirage|BombsiteB|ct": {
+    "flash_kills": 8,
+    "flash_from": [
+      [
+        "BackAlley",
+        4
+      ],
+      [
+        "Apartments",
+        3
+      ],
+      [
+        "BombsiteB",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "BombsiteB",
+        4
+      ],
+      [
+        "Apartments",
+        2
+      ],
+      [
+        "Catwalk",
+        2
+      ]
+    ]
+  },
+  "de_dust2|ShortStairs|ct": {
+    "flash_kills": 5,
+    "flash_from": [
+      [
+        "Middle",
+        2
+      ],
+      [
+        "Catwalk",
+        2
+      ],
+      [
+        "TopofMid",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "Catwalk",
+        3
+      ],
+      [
+        "ShortStairs",
+        1
+      ],
+      [
+        "Middle",
+        1
+      ]
+    ]
+  },
+  "de_dust2|ARamp|ct": {
+    "flash_kills": 7,
+    "flash_from": [
+      [
+        "ExtendedA",
+        4
+      ],
+      [
+        "ShortStairs",
+        2
+      ],
+      [
+        "UnderA",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "ExtendedA",
+        5
+      ],
+      [
+        "LongA",
+        1
+      ],
+      [
+        "BombsiteA",
+        1
+      ]
+    ]
+  },
+  "de_dust2|BombsiteB|ct": {
+    "flash_kills": 17,
+    "flash_from": [
+      [
+        "UpperTunnel",
+        8
+      ],
+      [
+        "MidDoors",
+        7
+      ],
+      [
+        "BombsiteB",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "BombsiteB",
+        11
+      ],
+      [
+        "UpperTunnel",
+        3
+      ],
+      [
+        "Hole",
+        2
+      ]
+    ]
+  },
+  "de_anubis|Bridge|t": {
+    "flash_kills": 9,
+    "flash_from": [
+      [
+        "Middle",
+        7
+      ],
+      [
+        "Walkway",
+        2
+      ]
+    ],
+    "killer_from": [
+      [
+        "Middle",
+        5
+      ],
+      [
+        "Bridge",
+        3
+      ],
+      [
+        "MidDoors",
+        1
+      ]
+    ]
+  },
+  "de_anubis|BombsiteB|t": {
+    "flash_kills": 4,
+    "flash_from": [
+      [
+        "SnipersNest",
+        2
+      ],
+      [
+        "Alley",
+        2
+      ]
+    ],
+    "killer_from": [
+      [
+        "BombsiteB",
+        3
+      ],
+      [
+        "BackofB",
+        1
+      ]
+    ]
+  },
+  "de_anubis|BackofB|ct": {
+    "flash_kills": 6,
+    "flash_from": [
+      [
+        "Connector",
+        2
+      ],
+      [
+        "BombsiteB",
+        2
+      ],
+      [
+        "OutsideLong",
+        2
+      ]
+    ],
+    "killer_from": [
+      [
+        "BombsiteB",
+        3
+      ],
+      [
+        "OutsideLong",
+        2
+      ],
+      [
+        "BackofB",
+        1
+      ]
+    ]
+  },
+  "de_overpass|BombsiteA|ct": {
+    "flash_kills": 5,
+    "flash_from": [
+      [
+        "LowerPark",
+        4
+      ],
+      [
+        "BombsiteA",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "LowerPark",
+        2
+      ],
+      [
+        "UpperPark",
+        2
+      ],
+      [
+        "BombsiteA",
+        1
+      ]
+    ]
+  },
+  "de_overpass|BombsiteB|ct": {
+    "flash_kills": 14,
+    "flash_from": [
+      [
+        "Canal",
+        10
+      ],
+      [
+        "Water",
+        2
+      ],
+      [
+        "Construction",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "Canal",
+        8
+      ],
+      [
+        "BombsiteB",
+        5
+      ],
+      [
+        "Construction",
+        1
+      ]
+    ]
+  },
+  "de_overpass|Construction|t": {
+    "flash_kills": 5,
+    "flash_from": [
+      [
+        "Water",
+        4
+      ],
+      [
+        "BombsiteB",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "Construction",
+        2
+      ],
+      [
+        "BombsiteB",
+        2
+      ],
+      [
+        "Water",
+        1
+      ]
+    ]
+  },
+  "de_nuke|HutRoof|ct": {
+    "flash_kills": 4,
+    "flash_from": [
+      [
+        "Lobby",
+        1
+      ],
+      [
+        "Squeaky",
+        1
+      ],
+      [
+        "BombsiteA",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "Mini",
+        2
+      ],
+      [
+        "BombsiteA",
+        2
+      ]
+    ]
+  },
+  "de_overpass|Water|ct": {
+    "flash_kills": 10,
+    "flash_from": [
+      [
+        "BombsiteB",
+        4
+      ],
+      [
+        "Canal",
+        2
+      ],
+      [
+        "Alley",
+        2
+      ]
+    ],
+    "killer_from": [
+      [
+        "BombsiteB",
+        4
+      ],
+      [
+        "Water",
+        4
+      ],
+      [
+        "Bridge",
+        1
+      ]
+    ]
+  },
+  "de_overpass|Canal|t": {
+    "flash_kills": 8,
+    "flash_from": [
+      [
+        "Water",
+        4
+      ],
+      [
+        "Bridge",
+        3
+      ],
+      [
+        "UnderA",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "Canal",
+        4
+      ],
+      [
+        "Pipe",
+        4
+      ]
+    ]
+  },
+  "de_overpass|LowerPark|t": {
+    "flash_kills": 6,
+    "flash_from": [
+      [
+        "Walkway",
+        3
+      ],
+      [
+        "BombsiteA",
+        2
+      ],
+      [
+        "UnderA",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "LowerPark",
+        6
+      ]
+    ]
+  },
+  "de_nuke|Outside|t": {
+    "flash_kills": 4,
+    "flash_from": [
+      [
+        "Outside",
+        3
+      ],
+      [
+        "Catwalk",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "Outside",
+        3
+      ],
+      [
+        "Garage",
+        1
+      ]
+    ]
+  },
+  "de_dust2|BDoors|t": {
+    "flash_kills": 5,
+    "flash_from": [
+      [
+        "BombsiteB",
+        3
+      ],
+      [
+        "Hole",
+        1
+      ],
+      [
+        "UnderA",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "BombsiteB",
+        4
+      ],
+      [
+        "CTSpawn",
+        1
+      ]
+    ]
+  },
+  "de_dust2|MidDoors|t": {
+    "flash_kills": 7,
+    "flash_from": [
+      [
+        "CTSpawn",
+        2
+      ],
+      [
+        "Middle",
+        1
+      ],
+      [
+        "BombsiteB",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "MidDoors",
+        5
+      ],
+      [
+        "ShortStairs",
+        1
+      ],
+      [
+        "UnderA",
+        1
+      ]
+    ]
+  },
+  "de_mirage|Catwalk|t": {
+    "flash_kills": 5,
+    "flash_from": [
+      [
+        "Underpass",
+        2
+      ],
+      [
+        "BombsiteA",
+        2
+      ],
+      [
+        "Catwalk",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "Connector",
+        2
+      ],
+      [
+        "Middle",
+        2
+      ],
+      [
+        "SnipersNest",
+        1
+      ]
+    ]
+  },
+  "de_mirage|BombsiteA|t": {
+    "flash_kills": 6,
+    "flash_from": [
+      [
+        "BombsiteA",
+        2
+      ],
+      [
+        "Middle",
+        2
+      ],
+      [
+        "PalaceAlley",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "CTSpawn",
+        2
+      ],
+      [
+        "BombsiteA",
+        2
+      ],
+      [
+        "Jungle",
+        1
+      ]
+    ]
+  },
+  "de_inferno|Banana|t": {
+    "flash_kills": 10,
+    "flash_from": [
+      [
+        "BombsiteB",
+        6
+      ],
+      [
+        "Banana",
+        3
+      ],
+      [
+        "CTSpawn",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "Banana",
+        7
+      ],
+      [
+        "BombsiteB",
+        3
+      ]
+    ]
+  },
+  "de_inferno|BombsiteB|ct": {
+    "flash_kills": 7,
+    "flash_from": [
+      [
+        "Banana",
+        5
+      ],
+      [
+        "BombsiteB",
+        2
+      ]
+    ],
+    "killer_from": [
+      [
+        "BombsiteB",
+        6
+      ],
+      [
+        "Banana",
+        1
+      ]
+    ]
+  },
+  "de_inferno|BombsiteB|t": {
+    "flash_kills": 6,
+    "flash_from": [
+      [
+        "Ruins",
+        2
+      ],
+      [
+        "CTSpawn",
+        2
+      ],
+      [
+        "BombsiteB",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "BombsiteB",
+        5
+      ],
+      [
+        "Ruins",
+        1
+      ]
+    ]
+  },
+  "de_dust2|ExtendedA|t": {
+    "flash_kills": 6,
+    "flash_from": [
+      [
+        "ARamp",
+        3
+      ],
+      [
+        "LongA",
+        3
+      ]
+    ],
+    "killer_from": [
+      [
+        "LongA",
+        2
+      ],
+      [
+        "ARamp",
+        2
+      ],
+      [
+        "UnderA",
+        1
+      ]
+    ]
+  },
+  "de_anubis|Canal|t": {
+    "flash_kills": 9,
+    "flash_from": [
+      [
+        "BombsiteA",
+        5
+      ],
+      [
+        "Walkway",
+        3
+      ],
+      [
+        "BombsiteB",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "Canal",
+        6
+      ],
+      [
+        "Main",
+        3
+      ]
+    ]
+  },
+  "de_anubis|Main|ct": {
+    "flash_kills": 5,
+    "flash_from": [
+      [
+        "Canal",
+        5
+      ]
+    ],
+    "killer_from": [
+      [
+        "Main",
+        5
+      ]
+    ]
+  },
+  "de_anubis|BombsiteB|ct": {
+    "flash_kills": 14,
+    "flash_from": [
+      [
+        "OutsideLong",
+        6
+      ],
+      [
+        "Ruins",
+        4
+      ],
+      [
+        "BombsiteB",
+        3
+      ]
+    ],
+    "killer_from": [
+      [
+        "BombsiteB",
+        9
+      ],
+      [
+        "Connector",
+        4
+      ],
+      [
+        "OutsideLong",
+        1
+      ]
+    ]
+  },
+  "de_mirage|Underpass|t": {
+    "flash_kills": 4,
+    "flash_from": [
+      [
+        "SnipersNest",
+        2
+      ],
+      [
+        "CTSpawn",
+        2
+      ]
+    ],
+    "killer_from": [
+      [
+        "Middle",
+        4
+      ]
+    ]
+  },
+  "de_inferno|BombsiteA|ct": {
+    "flash_kills": 5,
+    "flash_from": [
+      [
+        "SecondMid",
+        2
+      ],
+      [
+        "BombsiteA",
+        1
+      ],
+      [
+        "TopofMid",
+        1
+      ]
+    ],
+    "killer_from": [
+      [
+        "BombsiteA",
+        2
+      ],
+      [
+        "TopofMid",
+        2
+      ],
+      [
+        "Balcony",
+        1
+      ]
+    ]
+  }
+}
