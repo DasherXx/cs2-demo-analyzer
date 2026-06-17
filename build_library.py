@@ -72,19 +72,30 @@ def _parse_one_demo(path_str: str) -> dict:
             except Exception:
                 return None
 
-        # najwcześniejszy tick każdego granatu
+        # najwcześniejszy tick każdego granatu: (entity_id, round) -> tick
         gren_first = {}
         gdf = safe_table("grenades")
         if gdf is not None and len(gdf) > 0:
-            for r in gdf.to_dicts():
+            gren_rows = gdf.to_dicts()
+            for r in gren_rows:
                 if r.get("X") is None:
                     continue
                 key = (r.get("entity_id"), r.get("round_num"))
                 t = r["tick"]
                 if key not in gren_first or t < gren_first[key]:
                     gren_first[key] = t
+        else:
+            gren_rows = []
 
-        # pozycja rzutu z dem.ticks
+        # Flashe: w dem.grenades (brak własnej tabeli). Jeden rzut = (entity_id, round)
+        # z CFlashbangProjectile; wybuch = pozycja w ostatnim ticku toru.
+        flash_by_throw = defaultdict(list)
+        for r in gren_rows:
+            if r.get("grenade_type") == "CFlashbangProjectile" and r.get("X") is not None:
+                flash_by_throw[(r.get("entity_id"), r.get("round_num"))].append(r)
+
+        # pozycja rzutu z dem.ticks — teraz z dołączoną STRONĄ (CT/T) i calloutem.
+        # Pary (steamid, tick_rzutu) zbieramy ze smoke/molo (z tabel) ORAZ z flashy.
         tdf = safe_table("ticks")
         throw_lut = {}
         if tdf is not None and len(tdf) > 0:
@@ -97,16 +108,24 @@ def _parse_one_demo(path_str: str) -> dict:
                     ft = gren_first.get((row.get("entity_id"), row.get("round_num")))
                     if ft is not None:
                         pairs.add((row.get("thrower_steamid"), ft))
+            for (eid, rnd), rows in flash_by_throw.items():
+                ft = gren_first.get((eid, rnd))
+                steam = rows[0].get("thrower_steamid")
+                if ft is not None:
+                    pairs.add((steam, ft))
             if pairs:
                 sub = tdf.filter(
                     pl.col("steamid").is_in(list({a for a, _ in pairs})) &
                     pl.col("tick").is_in(list({b for _, b in pairs}))
                 ).to_dicts()
                 for r in sub:
-                    throw_lut[(r["steamid"], r["tick"])] = (r.get("X"), r.get("Y"), r.get("place"))
+                    throw_lut[(r["steamid"], r["tick"])] = (
+                        r.get("X"), r.get("Y"), r.get("place"), r.get("side")
+                    )
 
         items = {}
         total = 0
+        # smoke + molotov: lądowanie z tabeli, strona z thrower_side
         for utype, attr in UTILITY_TABLES.items():
             df = safe_table(attr)
             if df is None or len(df) == 0:
@@ -126,6 +145,22 @@ def _parse_one_demo(path_str: str) -> dict:
                     [round(x, 1), round(y, 1), tx, ty, tplace]
                 )
                 total += 1
+
+        # flash: wybuch = ostatni tick toru; strona + pozycja rzutu z dem.ticks
+        for (eid, rnd), rows in flash_by_throw.items():
+            rows.sort(key=lambda r: r["tick"])
+            det = rows[-1]
+            steam = rows[0].get("thrower_steamid")
+            ft = gren_first.get((eid, rnd))
+            pos = throw_lut.get((steam, ft)) if ft else None
+            tx = ty = tplace = side = None
+            if pos and pos[0] is not None:
+                tx, ty, tplace, side = round(pos[0], 1), round(pos[1], 1), pos[2], pos[3]
+            side = side or "?"
+            items.setdefault(f"{map_name}|{side}|flash", []).append(
+                [round(det["X"], 1), round(det["Y"], 1), tx, ty, tplace]
+            )
+            total += 1
 
         plays = []
         kdf = safe_table("kills")
@@ -190,7 +225,7 @@ def extract(folder: str, rebuild: bool = False, workers: int = 3):
                 plays.extend(res["plays"])
                 processed.append(res["file"])
                 print(f"[{finished}/{len(todo)}] {res['file']}: {res['map']}, "
-                      f"{res['total']} rzutów (smoke+molo)")
+                      f"{res['total']} rzutów (smoke+molo+flash)")
                 # zapis przyrostowy co 5 dem — przerwanie nie traci całej roboty
                 if finished % 5 == 0:
                     _save_cache(processed, dict(by_key), plays)
